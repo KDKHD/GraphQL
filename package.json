@@ -1,5 +1,5 @@
 {
-  "name": "api",
+  "name": "graphql_template",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
@@ -7,7 +7,7 @@
     "build": "rimraf ./build && tsc",
     "prod": "node build/start.js"
   },
-  "author": "",
+  "author": "Kenneth Kreindler",
   "license": "ISC",
   "_moduleAliases": {
     "@models/*": "build/models/*",
