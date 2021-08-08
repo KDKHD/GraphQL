@@ -32,7 +32,7 @@ export default async function startApolloServer() {
     app.listen({ port: process.env.PORT }, resolve as () => void)
   );
 
-  console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`);
+  console.log(`🚀 Server ready at http://localhost:${process.env.PORT}${server.graphqlPath}`);
 
   return { server, app };
 }
