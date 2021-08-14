@@ -1,20 +1,23 @@
 import { gql } from 'graphql-modules';
 
 export default gql`
-  type Auth {
+  type AuthNode {
     token: String
+    user_id: String
+    user: UserEdge
   }
 
-  type User {
-    id: String
-    name: String
+  type AuthEdge {
+    node: AuthNode
+    cursor: String
   }
 
   extend type Query {
-    signedInUser: User
+    signedInUser: UserEdge
   }
 
   extend type Mutation {
-    signInWithUsernameAndPassword(username: String, password: String): Auth
+    signUpWithUsernameAndPassword(username: String, password: String): AuthEdge
+    signInWithUsernameAndPassword(username: String, password: String): AuthEdge
   }
 `;
