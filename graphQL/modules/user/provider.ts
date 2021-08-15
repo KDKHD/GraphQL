@@ -39,7 +39,8 @@ export class UsersProvider extends ParentProvider {
   }
 
   /**
-   * Data batch function.
+   * Data batch function. Returns [partitionField1, partitionField2, ...other table fields]
+   * 
    */
   batchFunction(args: QueryArgs) {
     return prisma.$queryRaw<users[]>(

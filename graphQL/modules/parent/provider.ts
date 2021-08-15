@@ -145,8 +145,8 @@ export class ParentProvider {
               .map((field) => item[field]);
             const tempPartitionsKeyHash = objectHash(tempPartitionsKey);
             if (tempPartitionsKeyHash in grouped) {
-              if (args.many) grouped[tempPartitionsKeyHash].push(item);
-              else grouped[tempPartitionsKeyHash] = item;
+              if (args.many) grouped[tempPartitionsKeyHash].push(item); // if we are doing a one to many relationship
+              else grouped[tempPartitionsKeyHash] = item; // if we are doing a one to one relationship
             }
           });
         });
