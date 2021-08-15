@@ -40,7 +40,7 @@ export const resolvers = {
   AuthNode: {
     user: async (parent: { user_id: string }, args: any, { res }: any) => {
       const userProvider = new UsersProvider()
-      return userProvider.usersDataLoaderManager({})
+      return userProvider.dataLoaderManager({})
         .load([["user_id", parent.user_id]])
         .then(edgeItemToNode);
     },

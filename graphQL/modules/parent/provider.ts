@@ -1,4 +1,3 @@
-import { Prisma, PrismaClient } from "@prisma/client";
 import {
   batchKeys,
   CountDataLoaderKey,
@@ -6,12 +5,7 @@ import {
   DataLoaderKey,
 } from "@utils/dataloaderHelper";
 import {
-  afterLimit,
-  prismaPartition,
   QueryArgs,
-  selectCount,
-  selectFields,
-  whereGen,
 } from "@utils/queryHelpers";
 import DataLoader from "dataloader";
 import objectHash from "object-hash";
@@ -19,6 +13,16 @@ import objectHash from "object-hash";
 /********
  * Manages dataloaders
  ********/
+
+export type CountQuery = {
+    [fields:string]:any
+    count:number
+} 
+
+export type DataQuery = {
+    [fields:string]:any
+    id: number
+} 
 export class ParentProvider {
   dataLoaders;
   countDataLoaders;
@@ -45,7 +49,7 @@ export class ParentProvider {
   /**
    * Creates individual dataloaders for each unique args
    */
-  usersDataLoaderManager(args: QueryArgs) {
+  dataLoaderManager(args: QueryArgs) {
     const filterKey = objectHash(args);
     if (!(filterKey in this.dataLoaders)) {
       this.dataLoaders[filterKey] = this.dataLoader(args);
@@ -56,7 +60,7 @@ export class ParentProvider {
   /**
    * Creates individual count dataloaders for each unique args
    */
-  usersCountDataLoaderManager(args: QueryArgs) {
+  countDataLoaderManager(args: QueryArgs) {
     const filterKey = objectHash(args);
     if (!(filterKey in this.countDataLoaders)) {
       this.countDataLoaders[filterKey] = this.countDataLoader(args);
@@ -113,7 +117,7 @@ export class ParentProvider {
     );
   }
 
-  batchFunction(args: QueryArgs): Promise<any[]> {
+  batchFunction(_args: QueryArgs): Promise<DataQuery[]> {
     throw new Error("Method 'batchFunction()' must be implemented.");
   }
 
@@ -132,7 +136,7 @@ export class ParentProvider {
               .map((field) => next[field]);
             total[objectHash(partitionsKey)] = next;
             return total;
-          }, {});
+          }, {} as {[partitionsKey:string]:CountQuery});
         });
 
         // Create partitionsKey from partition values. Use partitionsKey to get the correct count
@@ -153,7 +157,7 @@ export class ParentProvider {
     );
   }
 
-  countBatchFunction(args: QueryArgs): Promise<any[]> {
+  countBatchFunction(_args: QueryArgs): Promise<CountQuery[]> {
     throw new Error("Method 'countBatchFunction()' must be implemented.");
   }
 }

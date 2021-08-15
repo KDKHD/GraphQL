@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient, users } from "@prisma/client";
 import {
   CountDataLoaderKey,
   DataLoaderKey,
@@ -12,7 +12,7 @@ import {
   whereGen,
 } from "@utils/queryHelpers";
 import DataLoader from "dataloader";
-import { ParentProvider } from "../parent/provider";
+import { CountQuery, ParentProvider } from "../parent/provider";
 
 const prisma = new PrismaClient({
   log: [
@@ -26,7 +26,6 @@ const prisma = new PrismaClient({
 prisma.$on("query", async (e) => {
   console.log(`${e.query} ${e.params}`);
 });
-
 
 
 export class UsersProvider extends ParentProvider {
@@ -47,8 +46,8 @@ export class UsersProvider extends ParentProvider {
     });
   }
 
-  batchFunction(args: QueryArgs): Promise<any[]> {
-    return prisma.$queryRaw(
+  batchFunction(args: QueryArgs){
+    return prisma.$queryRaw<users[]>(
       afterLimit(
         Prisma.sql`(SELECT * , Row_number() ${prismaPartition(
           args
@@ -59,7 +58,7 @@ export class UsersProvider extends ParentProvider {
   }
 
   countBatchFunction(args: QueryArgs) {
-    return prisma.$queryRaw(
+    return prisma.$queryRaw<CountQuery[]>(
       selectCount(
         Prisma.sql`(SELECT ${Prisma.join([
           ...selectFields(args.partitionBy), // select the partitioned fields

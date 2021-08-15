@@ -15,7 +15,7 @@ export const resolvers = {
     ) => {
       const userProvider = new UsersProvider()
 
-      return userProvider.usersDataLoaderManager({})
+      return userProvider.dataLoaderManager({})
         .load([["user_id", args.user_id]])
         .then(edgeItemToNode);
     },
@@ -33,11 +33,11 @@ export const resolvers = {
       const userProvider = new UsersProvider()
       //await UsersProvider.usersCountDataLoaderManager({where:args.WHERE, partitionBy:["f_name"]}).load([["f_name", "Kenneth"]]).then(res=>console.log("HE",res))
       return {
-        totalCount: userProvider.usersCountDataLoaderManager({
+        totalCount: userProvider.countDataLoaderManager({
           where: args.WHERE,
           partitionBy: ["f_name"],
         }).load([["f_name", "Kenneth"]]),
-        edges: userProvider.usersDataLoaderManager({
+        edges: userProvider.dataLoaderManager({
           where: args.WHERE,
           after: args.AFTER,
           first: args.FIRST,
