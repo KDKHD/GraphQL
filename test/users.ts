@@ -2,6 +2,7 @@ export const users = {
     accounts: [
       {
         id: "12345",
+        user_id: "b9af71b3-731b-4e08-bee8-c455bec0135b",
         name: "Alice",
         email: "alice@email.com",
         password: "pAsSWoRd!",

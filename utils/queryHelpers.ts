@@ -14,21 +14,30 @@ export type QueryArgs = {
   after?: string;
   partitionBy?: string[];
   order?: OrderByType[];
-  paginateFiled?: string
+  paginateFiled?: string;
+  many?:boolean
 };
 
 const HARD_LIMIT = 15;
-export const prismaPartition = (
-  args: QueryArgs
-) => {
+export const prismaPartition = (args: QueryArgs) => {
   return Prisma.sql` 
             OVER( 
-                ${args.partitionBy==undefined?Prisma.empty:Prisma.sql([`partition BY ${args.partitionBy.join(', ')}`])} 
-                ${args.order==undefined?Prisma.empty:Prisma.sql`ORDER BY ${Prisma.join(
-                  args.order.map(
-                    (item) => Prisma.sql([`${item.field} ${item.direction}`]) 
-                  )
-                )}`}
+              ${
+                args.partitionBy == undefined
+                  ? Prisma.empty
+                  : Prisma.sql`partition BY ${Prisma.join([
+                      ...selectFields(args.partitionBy),
+                    ])}`
+              } 
+              ${
+                args.order == undefined
+                  ? Prisma.empty
+                  : Prisma.sql`ORDER BY ${Prisma.join(
+                      args.order.map((item) =>
+                        Prisma.sql([`${item.field} ${item.direction}`])
+                      )
+                    )}`
+              }
                 ) 
             AS partition_value
         `;
@@ -42,6 +51,12 @@ export const batchedKeysToSQL = (batchedKeys?: BatchedKeys) => {
     ),
     " OR "
   );
+};
+
+export const selectFields = (fields?: string[]) => {
+  if (fields == undefined) return [];
+  const joined = fields.map((field) => Prisma.sql([`${field}`]));
+  return joined;
 };
 
 export type FieldOptionsString = {
@@ -176,14 +191,13 @@ const prismaWhereHelper = (where?: Where | Where[], key?: string): Sql => {
 export const whereGen = (args: QueryArgs) => {
   const conditions = [
     prismaWhere(args.where),
-    batchedKeysToSQL(args.batchedKeys)
+    batchedKeysToSQL(args.batchedKeys),
   ].filter((item) => item != Prisma.empty);
   if (conditions.length == 0) return Prisma.empty;
   return Prisma.sql`WHERE (${Prisma.join(conditions, " AND ")})`;
 };
 
-export const afterLimit = (sql: Prisma.Sql,args: QueryArgs) => {
-
+export const afterLimit = (sql: Prisma.Sql, args: QueryArgs) => {
   const afterId = args.after
     ? parseInt(Buffer.from(args.after, "base64").toString("ascii"))
     : 0;
@@ -192,6 +206,18 @@ export const afterLimit = (sql: Prisma.Sql,args: QueryArgs) => {
       ? HARD_LIMIT
       : args.first;
 
-  const afterSQL = Prisma.sql([`${args.paginateFiled || 'partition_value'} > `, ''], afterId)
-  return Prisma.sql`SELECT * FROM ${sql} WHERE ${afterSQL} LIMIT ${limit}`
+  const afterSQL = Prisma.sql(
+    [`${args.paginateFiled || "id"} > `, ""],
+    afterId
+  );
+  return Prisma.sql`SELECT * FROM ${sql} WHERE ${afterSQL} LIMIT ${limit}`;
+};
+
+export const selectCount = (sql: Prisma.Sql, args: QueryArgs) => {
+  return Prisma.sql`SELECT ${Prisma.join([
+    ...selectFields(
+      args.partitionBy?.map((item) => `MIN(${item}) as ${item}`)
+    ),
+    Prisma.sql`AVG(partition_value) as count`,
+  ])} FROM ${sql}`
 }

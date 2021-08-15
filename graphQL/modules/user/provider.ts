@@ -1,6 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import {
-  batchKeys,
   CountDataLoaderKey,
   DataLoaderKey,
 } from "@utils/dataloaderHelper";
@@ -8,10 +7,12 @@ import {
   afterLimit,
   prismaPartition,
   QueryArgs,
+  selectCount,
+  selectFields,
   whereGen,
 } from "@utils/queryHelpers";
 import DataLoader from "dataloader";
-import objectHash from "object-hash";
+import { ParentProvider } from "../parent/provider";
 
 const prisma = new PrismaClient({
   log: [
@@ -26,75 +27,27 @@ prisma.$on("query", async (e) => {
   console.log(`${e.query} ${e.params}`);
 });
 
-export class UsersProvider {
-  static usersDataLoaders = {} as {
+
+
+export class UsersProvider extends ParentProvider {
+  /**
+   * Store reusable dataloader here
+   */
+  static dataLoaders = {} as {
     [whereKey: string]: DataLoader<DataLoaderKey, any[] | any, unknown>;
   };
-  static usersCountDataLoaders = {} as {
+  static countDataLoaders = {} as {
     [whereKey: string]: DataLoader<CountDataLoaderKey, any[] | any, unknown>;
   };
 
-  /**
-   * Creates individual dataloaders for each unique args
-   */
-  static usersDataLoaderManager = (args: QueryArgs, many: boolean = true) => {
-    const filterKey = objectHash(args);
-    if (!(filterKey in UsersProvider.usersDataLoaders))
-      UsersProvider.usersDataLoaders[filterKey] = UsersProvider.usersDataLoader(
-        args,
-        many
-      );
-    return UsersProvider.usersDataLoaders[filterKey];
-  };
+  constructor() {
+    super({
+      dataLoaders: UsersProvider.dataLoaders,
+      countDataLoaders: UsersProvider.countDataLoaders,
+    });
+  }
 
-  /**
-   * The dataloader
-   */
-  static usersDataLoader = (args: QueryArgs, many: boolean) =>
-    new DataLoader(
-      async (keys: readonly DataLoaderKey[]) => {
-        // So we can do `WHERE user_id IN (1,2,3,...) OR name IN ('Bob','Jon')`
-        const batchedKeys = batchKeys(keys);
-
-        // Data structure to help group data so we can return
-        // data in the correct order later. We will fill this
-        // ds later.
-        const orderedPartitionKeys = [] as string[]
-        const grouped = {} as {[partitionsKey:string]:any[]|any}
-        keys.forEach(key=>{
-            const kTemp = key.reduce((total, next)=>{
-                total[next[0]] = next[1]
-                return total
-            },{} as {[field:string]:any})
-            const partitionsKey = Object.keys(kTemp).sort().map(item=>kTemp[item])
-            grouped[objectHash(partitionsKey)] = []
-            orderedPartitionKeys.push(objectHash(partitionsKey))
-        })
-
-        // Make query, sort the data into the grouped ds
-        await UsersProvider.usersBatchFunction({ ...args, batchedKeys }).then(
-          (data) => {
-            data.forEach((item) => {
-                const tempPartitionsKey = Object.keys(item).sort().filter((field)=>Object.keys(batchedKeys).includes(field)).map((field)=>item[field])    
-                const tempPartitionsKeyHash = objectHash(tempPartitionsKey)
-                if(tempPartitionsKeyHash in grouped){
-                    if(many) grouped[tempPartitionsKeyHash].push(item)
-                    else grouped[tempPartitionsKeyHash] = item
-                }
-            });
-          }
-        );
-
-        // Return data in the same order as the original keys
-        return orderedPartitionKeys.map((partitionsKey)=>grouped[partitionsKey])
-      },
-      { cacheKeyFn: (key) => objectHash(key) }
-    );
-
-  /**
-   * Makes the query using all of the params
-   */
-  static usersBatchFunction = async (args: QueryArgs): Promise<any[]> => {
+  batchFunction(args: QueryArgs): Promise<any[]> {
     return prisma.$queryRaw(
       afterLimit(
         Prisma.sql`(SELECT * , Row_number() ${prismaPartition(
@@ -103,73 +56,21 @@ export class UsersProvider {
         args
       )
     );
-  };
+  }
 
-  /**
-   * Creates individual dataloaders for each unique args
-   */
-  static usersCountDataLoaderManager = (args: QueryArgs) => {
-    const filterKey = objectHash(args);
-    if (!(filterKey in UsersProvider.usersCountDataLoaders))
-      UsersProvider.usersCountDataLoaders[filterKey] =
-        UsersProvider.usersCountDataLoader(args);
-    return UsersProvider.usersCountDataLoaders[filterKey];
-  };
-
-  static usersCountDataLoader = (args: QueryArgs) =>
-    new DataLoader(async (partitions: readonly CountDataLoaderKey[]) => {
-      // Group by partition. {[hash(partition values)]:{count:number}}
-      const grouped = await UsersProvider.usersBatchCountFunction(args).then(
-        (res) => {
-          return res.reduce((total, next) => {
-            const partitionsKey = Object.keys(next)
-              .filter((field) => field != "count")
-              .sort()
-              .map((field) => next[field]);
-            total[objectHash(partitionsKey)] = next;
-            return total;
-          }, {});
-        }
-      );
-
-      // Create partitionsKey from partition values. Use partitionsKey to get the correct count
-      return partitions.map((partition) => {
-        const pTemp = partition.reduce((total, next) => {
-          total[next[0]] = next[1];
-          return total;
-        }, {} as { [field: string]: any });
-        const partitionsKey = Object.keys(pTemp)
-          .filter((field) => field != "count")
-          .sort()
-          .map((field) => pTemp[field])
-          .filter((value) => value != undefined);
-        return grouped[objectHash(partitionsKey)].count;
-      });
-    });
-
-  static usersBatchCountFunction = async (args: QueryArgs): Promise<any[]> => {
-    return prisma.$queryRaw`SELECT ${Prisma.join(
-      [
-        args.partitionBy == undefined
-          ? Prisma.empty
-          : Prisma.sql([
-              `${args.partitionBy
-                .map((item) => `MIN(${item}) as ${item}`)
-                .join(", ")}`,
-            ]),
-        Prisma.sql`AVG(t1.partition_value)`,
-      ].filter((item) => item != Prisma.empty)
-    )} as count FROM (SELECT ${Prisma.join(
-      [
-        args.partitionBy == undefined
-          ? Prisma.empty
-          : Prisma.sql([`${args.partitionBy.join(", ")}`]),
-        Prisma.sql`COUNT(*) ${prismaPartition(args)}`,
-      ].filter((item) => item != Prisma.empty)
-    )} FROM users ${whereGen(args)}) AS t1 GROUP BY ${
-      args.partitionBy == undefined
-        ? "1=1"
-        : Prisma.sql([`${args.partitionBy.join(", ")}`])
-    }`;
-  };
+  countBatchFunction(args: QueryArgs) {
+    return prisma.$queryRaw(
+      selectCount(
+        Prisma.sql`(SELECT ${Prisma.join([
+          ...selectFields(args.partitionBy), // select the partitioned fields
+          Prisma.sql`COUNT(*) ${prismaPartition(args)}`, // select the count
+        ])} FROM users ${whereGen(args)}) AS t1 GROUP BY ${
+          args.partitionBy == undefined
+            ? "1=1"
+            : Prisma.join([...selectFields(args.partitionBy)])
+        }`,
+        args
+      )
+    );
+  }
 }

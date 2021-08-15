@@ -1,9 +1,6 @@
 import {
-  arrSingle,
   arrToEdge,
   edgeItemToNode,
-  OrderBy,
-  SortDirection,
 } from "@utils/dataloaderHelper";
 import { OrderByType, Where } from "@utils/queryHelpers";
 import { UsersProvider } from "./provider";
@@ -16,7 +13,9 @@ export const resolvers = {
       { userInfo }: any,
       info: any
     ) => {
-      return UsersProvider.usersDataLoaderManager({}, false)
+      const userProvider = new UsersProvider()
+
+      return userProvider.usersDataLoaderManager({})
         .load([["user_id", args.user_id]])
         .then(edgeItemToNode);
     },
@@ -31,10 +30,24 @@ export const resolvers = {
       { userInfo }: any,
       info: any
     ) => {
+      const userProvider = new UsersProvider()
       //await UsersProvider.usersCountDataLoaderManager({where:args.WHERE, partitionBy:["f_name"]}).load([["f_name", "Kenneth"]]).then(res=>console.log("HE",res))
       return {
-        totalCount: UsersProvider.usersCountDataLoaderManager({where:args.WHERE, partitionBy:["f_name","l_name"]}).load([["f_name", "Kenneth"], ["l_name", "Kreindler"]]),
-        edges: UsersProvider.usersDataLoaderManager({where:args.WHERE, after:args.AFTER, first: args.FIRST, order:args.ORDER,partitionBy:["f_name","l_name"], paginateFiled: "p_users.partition_value"}).load([["f_name", "Kenneth"],["l_name", "Kreindler"]]).then(arrToEdge),
+        totalCount: userProvider.usersCountDataLoaderManager({
+          where: args.WHERE,
+          partitionBy: ["f_name"],
+        }).load([["f_name", "Kenneth"]]),
+        edges: userProvider.usersDataLoaderManager({
+          where: args.WHERE,
+          after: args.AFTER,
+          first: args.FIRST,
+          order: args.ORDER,
+          partitionBy: ["f_name"],
+          paginateFiled: "p_users.partition_value",
+          many: true,
+        })
+          .load([["f_name", "Kenneth"]])
+          .then(arrToEdge),
       };
     },
   },
