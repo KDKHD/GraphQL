@@ -39,7 +39,7 @@ export class UsersProvider extends ParentProvider {
   }
 
   /**
-   * Data batch function
+   * Data batch function.
    */
   batchFunction(args: QueryArgs) {
     return prisma.$queryRaw<users[]>(
@@ -53,7 +53,9 @@ export class UsersProvider extends ParentProvider {
   }
 
   /**
-   * Count batch function
+   * Count batch function. Returns [partitionField1, partitionField2, ..., count][].
+   * We must return the partitionFields so that we can match count with a specific 
+   * key.
    */
   countBatchFunction(args: QueryArgs) {
     return prisma.$queryRaw<CountQuery[]>(
