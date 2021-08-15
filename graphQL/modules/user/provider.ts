@@ -1,9 +1,5 @@
 import { Prisma, PrismaClient, users } from "@prisma/client";
 import {
-  CountDataLoaderKey,
-  DataLoaderKey,
-} from "@utils/dataloaderHelper";
-import {
   afterLimit,
   prismaPartition,
   QueryArgs,
@@ -11,8 +7,8 @@ import {
   selectFields,
   whereGen,
 } from "@utils/queryHelpers";
-import DataLoader from "dataloader";
-import { CountQuery, ParentProvider } from "../parent/provider";
+import { CountQuery, DataLoadersStore, ParentProvider } from "..";
+import { CountDataLoadersStore } from "../parent";
 
 const prisma = new PrismaClient({
   log: [
@@ -27,26 +23,25 @@ prisma.$on("query", async (e) => {
   console.log(`${e.query} ${e.params}`);
 });
 
-
 export class UsersProvider extends ParentProvider {
   /**
    * Store reusable dataloader here
    */
-  static dataLoaders = {} as {
-    [whereKey: string]: DataLoader<DataLoaderKey, any[] | any, unknown>;
-  };
-  static countDataLoaders = {} as {
-    [whereKey: string]: DataLoader<CountDataLoaderKey, any[] | any, unknown>;
-  };
+  static dataLoaders = {} as DataLoadersStore;
+  static countDataLoaders = {} as CountDataLoadersStore;
 
   constructor() {
+    // Pass dataloader stores up to parent
     super({
       dataLoaders: UsersProvider.dataLoaders,
       countDataLoaders: UsersProvider.countDataLoaders,
     });
   }
 
-  batchFunction(args: QueryArgs){
+  /**
+   * Data batch function
+   */
+  batchFunction(args: QueryArgs) {
     return prisma.$queryRaw<users[]>(
       afterLimit(
         Prisma.sql`(SELECT * , Row_number() ${prismaPartition(
@@ -57,6 +52,9 @@ export class UsersProvider extends ParentProvider {
     );
   }
 
+  /**
+   * Count batch function
+   */
   countBatchFunction(args: QueryArgs) {
     return prisma.$queryRaw<CountQuery[]>(
       selectCount(

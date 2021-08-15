@@ -4,9 +4,7 @@ import {
   customCacheKeyFn,
   DataLoaderKey,
 } from "@utils/dataloaderHelper";
-import {
-  QueryArgs,
-} from "@utils/queryHelpers";
+import { QueryArgs } from "@utils/queryHelpers";
 import DataLoader from "dataloader";
 import objectHash from "object-hash";
 
@@ -15,14 +13,20 @@ import objectHash from "object-hash";
  ********/
 
 export type CountQuery = {
-    [fields:string]:any
-    count:number
-} 
+  [fields: string]: any;
+  count: number;
+};
 
 export type DataQuery = {
-    [fields:string]:any
-    id: number
-} 
+  [fields: string]: any;
+  id: number;
+};
+export type DataLoadersStore = {
+  [whereKey: string]: DataLoader<DataLoaderKey, any[] | any, unknown>;
+};
+export type CountDataLoadersStore = {
+  [whereKey: string]: DataLoader<CountDataLoaderKey, any[] | any, unknown>;
+};
 export class ParentProvider {
   dataLoaders;
   countDataLoaders;
@@ -31,12 +35,8 @@ export class ParentProvider {
     dataLoaders,
     countDataLoaders,
   }: {
-    dataLoaders: {
-      [whereKey: string]: DataLoader<DataLoaderKey, any[] | any, unknown>;
-    };
-    countDataLoaders: {
-      [whereKey: string]: DataLoader<CountDataLoaderKey, any[] | any, unknown>;
-    };
+    dataLoaders: DataLoadersStore;
+    countDataLoaders: CountDataLoadersStore;
   }) {
     this.dataLoaders = dataLoaders;
     this.countDataLoaders = countDataLoaders;
@@ -136,7 +136,7 @@ export class ParentProvider {
               .map((field) => next[field]);
             total[objectHash(partitionsKey)] = next;
             return total;
-          }, {} as {[partitionsKey:string]:CountQuery});
+          }, {} as { [partitionsKey: string]: CountQuery });
         });
 
         // Create partitionsKey from partition values. Use partitionsKey to get the correct count
