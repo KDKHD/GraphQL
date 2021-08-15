@@ -17,7 +17,7 @@ export const resolvers = {
       info: any
     ) => {
       return UsersProvider.usersDataLoaderManager({}, false)
-        .load(["user_id", args.user_id])
+        .load([["user_id", args.user_id]])
         .then(edgeItemToNode);
     },
     users: async (
@@ -33,8 +33,8 @@ export const resolvers = {
     ) => {
       //await UsersProvider.usersCountDataLoaderManager({where:args.WHERE, partitionBy:["f_name"]}).load([["f_name", "Kenneth"]]).then(res=>console.log("HE",res))
       return {
-        totalCount: UsersProvider.usersCountDataLoaderManager({where:args.WHERE, partitionBy:["f_name"]}).load([["f_name", "Kenneth"]]),
-        edges: UsersProvider.usersDataLoaderManager({where:args.WHERE, after:args.AFTER, first: args.FIRST, order:args.ORDER,partitionBy:["f_name","l_name"], paginateFiled: "p_users.partition_value"}).load(["f_name", "Kenneth"]).then(arrToEdge),
+        totalCount: UsersProvider.usersCountDataLoaderManager({where:args.WHERE, partitionBy:["f_name","l_name"]}).load([["f_name", "Kenneth"], ["l_name", "Kreindler"]]),
+        edges: UsersProvider.usersDataLoaderManager({where:args.WHERE, after:args.AFTER, first: args.FIRST, order:args.ORDER,partitionBy:["f_name","l_name"], paginateFiled: "p_users.partition_value"}).load([["f_name", "Kenneth"],["l_name", "Kreindler"]]).then(arrToEdge),
       };
     },
   },

@@ -26,7 +26,7 @@ export const resolvers = {
   },
   AuthNode:{
     user: async (parent: {user_id:string}, args: any, { res }: any) => {
-      return UsersProvider.usersDataLoaderManager({}).load(["user_id", parent.user_id])
+      return UsersProvider.usersDataLoaderManager({}).load([["user_id", parent.user_id]])
     }
   }
 };

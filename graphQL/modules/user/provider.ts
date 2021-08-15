@@ -59,32 +59,34 @@ export class UsersProvider {
         // Data structure to help group data so we can return
         // data in the correct order later. We will fill this
         // ds later.
-        const grouped = keys.reduce((total, [field, value]) => {
-          if (!(field in total)) total[field] = {};
-          if (!(value in total[field])) total[field][value] = many ? [] : null;
-          return total;
-        }, {} as { [field: string]: { [value in string | number]: any | any[] } });
-
-        // These are the fields that are specified in `[[user_id]] IN (1,2,3,...)`
-        const groupedKeys = Object.keys(grouped);
+        const orderedPartitionKeys = [] as string[]
+        const grouped = {} as {[partitionsKey:string]:any[]|any}
+        keys.forEach(key=>{
+            const kTemp = key.reduce((total, next)=>{
+                total[next[0]] = next[1]
+                return total
+            },{} as {[field:string]:any})
+            const partitionsKey = Object.keys(kTemp).sort().map(item=>kTemp[item])
+            grouped[objectHash(partitionsKey)] = []
+            orderedPartitionKeys.push(objectHash(partitionsKey))
+        })
 
         // Make query, sort the data into the grouped ds
         await UsersProvider.usersBatchFunction({ ...args, batchedKeys }).then(
           (data) => {
             data.forEach((item) => {
-              groupedKeys.forEach((key) => {
-                const value = item[key];
-                if (value in grouped[key])
-                  many
-                    ? grouped[key][value].push(item)
-                    : (grouped[key][value] = item);
-              });
+                const tempPartitionsKey = Object.keys(item).sort().filter((field)=>Object.keys(batchedKeys).includes(field)).map((field)=>item[field])    
+                const tempPartitionsKeyHash = objectHash(tempPartitionsKey)
+                if(tempPartitionsKeyHash in grouped){
+                    if(many) grouped[tempPartitionsKeyHash].push(item)
+                    else grouped[tempPartitionsKeyHash] = item
+                }
             });
           }
         );
 
         // Return data in the same order as the original keys
-        return keys.map(([field, value]) => grouped[field][value]);
+        return orderedPartitionKeys.map((partitionsKey)=>grouped[partitionsKey])
       },
       { cacheKeyFn: (key) => objectHash(key) }
     );
