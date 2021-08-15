@@ -24,6 +24,14 @@ export type DataLoadersStore = {
 export type CountDataLoadersStore = {
   [whereKey: string]: DataLoader<CountDataLoaderKey, any[] | any, unknown>;
 };
+
+/**
+ * ParentProvider provides the infrastructure for matching
+ * query results with the correct DataLoader input keys. This 
+ * class can be extended by other child providers. Child providers
+ * only have to implement the queries them self. The rest of the 
+ * magic is handled by ParentProvider.
+ */ 
 export class ParentProvider {
 
   /********
