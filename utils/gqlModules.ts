@@ -8,10 +8,6 @@ const globalTypeDefs = gql`
 
   scalar Date
 
-  type pageInfo {
-    endCursor: String
-    hasNextPage: Boolean
-  }
 
   enum SortDirectionEnum {
     ASC

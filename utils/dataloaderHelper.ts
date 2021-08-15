@@ -1,6 +1,9 @@
-export type DataLoaderKey = [string, any]
+export type DataLoaderKey = any[]
+export type CountDataLoaderKey = string[][]
 export type BatchedKeys = { [field: string]: any[] }
 export type SortDirection = "ASC" | "DESC"
+export type OrderBy = {[field:string]:SortDirection}
+
 export const batchKeys = (args: readonly DataLoaderKey[]) => {
   return args.reduce((total, next) => {
     if (next.length != 2)
@@ -17,6 +20,10 @@ export const arrSingle = (args:any[]) => {
     return args?.[0]
 }
 
-export const arrToEdge = (args:{id:number}[]) => {
-    return args.map(node=>({node, cursor:Buffer.from(`${node.id}`).toString('base64')}))
+export const arrToEdge = (args:{partition_index:number}[]) => {
+    return args.map(node=>edgeItemToNode(node))
+}
+
+export const edgeItemToNode = (node:{partition_index:number})=>{
+    return {node, cursor:Buffer.from(`${node.partition_index}`).toString('base64')}
 }

@@ -20,7 +20,6 @@ export default gql`
   type UserConnection {
     totalCount: Int
     edges: [UserEdge]
-    pageInfo: pageInfo
   }
 
   input UserWhere {
@@ -33,13 +32,28 @@ export default gql`
     email: FieldOptionsString
   }
 
+  enum UserOrderByField {
+    id
+    user_id
+    f_name
+    l_name
+    phone
+    email
+    created_at
+  }
+
+  input UserOrderBy {
+    field: UserOrderByField
+    direction: SortDirectionEnum
+  }
+
   extend type Query {
     user(
-    user_id: String): UserEdge
+    user_id: String!): UserEdge
     users(
     FIRST: Int
     AFTER: String
-    DIRECTION: SortDirectionEnum
+    ORDER: [UserOrderBy]
     WHERE:UserWhere): UserConnection
   }
 
