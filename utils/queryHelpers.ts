@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { Sql } from "@prisma/client/runtime";
 import { BatchedKeys, batchKeys } from "./dataloaderHelper";
+import format from 'pg-format';
 
 export type OrderByType = {
   field: string;
@@ -43,6 +44,11 @@ export const prismaPartition = (args: QueryArgs) => {
         `;
 };
 
+export const sqlWrap = (s:string) => {
+  return Prisma.sql([s])
+}
+
+
 export const batchedKeysToSQL = (batchedKeys?: BatchedKeys) => {
   if (!batchedKeys || Object.keys(batchedKeys).length == 0) return Prisma.empty;
   return Prisma.join(
@@ -53,9 +59,10 @@ export const batchedKeysToSQL = (batchedKeys?: BatchedKeys) => {
   );
 };
 
-export const selectFields = (fields?: string[]) => {
+export const selectFields = (fields?: string[], fmt: ("%%" | "%I" | "%L" | "%s") = "%I") => {
   if (fields == undefined) return [];
-  const joined = fields.map((field) => Prisma.sql([`${field}`]));
+  const joined = fields.map((field) => Prisma.sql([format(`${fmt}`, field)]));
+  console.log(joined)
   return joined;
 };
 
@@ -100,46 +107,46 @@ export const handleOperator = (
 ) => {
   switch (operation) {
     case "is": {
-      return Prisma.sql([`${field} = `, ""], value);
+      return sqlWrap(format("%I = %L", field, value));
     }
     case "not": {
-      return Prisma.sql([`${field} != `, ""], value);
+      return sqlWrap(format("%I != %L", field, value))
     }
     case "in": {
-      return Prisma.sql([`${field} IN `, ""], Prisma.join(value));
+      return sqlWrap(format("%I IN (%L)", field, value))
     }
     case "not_in": {
-      return Prisma.sql([`${field} NOT IN `, ""], Prisma.join(value));
+      return sqlWrap(format("%I NOT IN (%L)", field, value))
     }
     case "lt": {
-      return Prisma.sql([`${field} < `, ""], value);
+      return sqlWrap(format("%I < %L", field, value));
     }
     case "lte": {
-      return Prisma.sql([`${field} <= `, ""], value);
+      return sqlWrap(format("%I <= %L", field, value));
     }
     case "gt": {
-      return Prisma.sql([`${field} > `, ""], value);
+      return sqlWrap(format("%I > %L", field, value));
     }
     case "gte": {
-      return Prisma.sql([`${field} >= `, ""], value);
+      return sqlWrap(format("%I >= %L", field, value));
     }
     case "contains": {
-      return Prisma.sql([`${field} ILIKE `, ""], `%${value}%`);
+      return sqlWrap(format("%I ILIKE %L", field, `%${value}%`))
     }
     case "not_contains": {
-      return Prisma.sql([`${field} NOT ILIKE `, ""], `%${value}%`);
+      return sqlWrap(format("%I NOT ILIKE %L", field, `%${value}%`))
     }
     case "starts_with": {
-      return Prisma.sql([`${field} ILIKE `, ""], `${value}%`);
+      return sqlWrap(format("%I ILIKE %L", field, `${value}%`))
     }
     case "not_starts_with": {
-      return Prisma.sql([`${field} NOT ILIKE `, ""], `${value}%`);
+      return sqlWrap(format("%I NOT ILIKE %L", field, `${value}%`))
     }
     case "ends_with": {
-      return Prisma.sql([`${field} ILIKE `, ""], `%${value}`);
+      return sqlWrap(format("%I ILIKE %L", field, `%${value}`))
     }
     case "not_ends_with": {
-      return Prisma.sql([`${field} NOT ILIKE `, ""], `%${value}`);
+      return sqlWrap(format("%I NOT ILIKE %L", field, `%${value}`))
     }
     default: {
       throw new Error(`Invalid operator ${operation}`);
@@ -206,18 +213,14 @@ export const afterLimit = (sql: Prisma.Sql, args: QueryArgs) => {
       ? HARD_LIMIT
       : args.first;
 
-  const afterSQL = Prisma.sql(
-    [`${args.paginateFiled || "id"} > `, ""],
-    afterId
-  );
-  return Prisma.sql`SELECT * FROM ${sql} WHERE ${afterSQL} LIMIT ${limit}`;
+  const afterSQL = sqlWrap(format.withArray("%s > %s", [args.paginateFiled || "id", afterId]))
+
+  return Prisma.sql`SELECT * FROM ${sql} WHERE ${afterSQL} LIMIT ${sqlWrap(format('%s', limit))}`;
 };
 
 export const selectCount = (sql: Prisma.Sql, args: QueryArgs) => {
   return Prisma.sql`SELECT ${Prisma.join([
-    ...selectFields(
-      args.partitionBy?.map((item) => `MIN(${item}) as ${item}`)
-    ),
+    ...args.partitionBy?.map((item) => sqlWrap(format('MIN(%I) AS %I', item,item))) || [],
     Prisma.sql`AVG(partition_value) as count`,
   ])} FROM ${sql}`
 }

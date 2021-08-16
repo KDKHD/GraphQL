@@ -27,13 +27,12 @@ export type CountDataLoadersStore = {
 
 /**
  * ParentProvider provides the infrastructure for matching
- * query results with the correct DataLoader input keys. This 
+ * query results with the correct DataLoader input keys. This
  * class can be extended by other child providers. Child providers
- * only have to implement the queries them self. The rest of the 
+ * only have to implement the queries them self. The rest of the
  * magic is handled by ParentProvider.
- */ 
+ */
 export class ParentProvider {
-
   /********
    * Store dataloaders so they can be reused for the same
    * args.
@@ -43,9 +42,9 @@ export class ParentProvider {
 
   /**
    * Child passes up dataLoaders and countDataLoaders so that they
-   * are stored in the child class instead of the parent. This prevents 
+   * are stored in the child class instead of the parent. This prevents
    * incorrect DataLoaders being used by different resolvers.
-   */ 
+   */
   constructor({
     dataLoaders,
     countDataLoaders,
@@ -139,13 +138,19 @@ export class ParentProvider {
         // Make query, sort the data into the grouped object.
         await this.batchFunction({ ...args, batchedKeys }).then((data) => {
           data.forEach((item) => {
-            const tempPartitionsKey = Object.keys(item)
+            const partitionsKey = Object.keys(item)
               .sort()
               .filter((field) => batchedKeysKeys.includes(field))
               .map((field) => item[field]);
-            const tempPartitionsKeyHash = objectHash(tempPartitionsKey);
+            if (partitionsKey.length !== batchedKeysKeys.length) {
+              throw new Error(
+                `Data dataloader result must contain: ${batchedKeysKeys.toString()}`
+              );
+            }
+            const tempPartitionsKeyHash = objectHash(partitionsKey);
             if (tempPartitionsKeyHash in grouped) {
-              if (args.many) grouped[tempPartitionsKeyHash].push(item); // if we are doing a one to many relationship
+              if (args.many) grouped[tempPartitionsKeyHash].push(item);
+              // if we are doing a one to many relationship
               else grouped[tempPartitionsKeyHash] = item; // if we are doing a one to one relationship
             }
           });
@@ -179,6 +184,11 @@ export class ParentProvider {
               .filter((field) => batchedKeysKeys.includes(field))
               .sort()
               .map((field) => next[field]);
+            if (partitionsKey.length !== batchedKeysKeys.length) {
+              throw new Error(
+                `Count dataloader result must contain: ${batchedKeysKeys.toString()}`
+              );
+            }
             total[objectHash(partitionsKey)] = next;
             return total;
           }, {} as { [partitionsKey: string]: CountQuery });

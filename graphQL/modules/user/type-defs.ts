@@ -30,6 +30,7 @@ export default gql`
     l_name: FieldOptionsString
     phone: FieldOptionsString
     email: FieldOptionsString
+    id: FieldOptionsInt
   }
 
   enum UserOrderByField {
