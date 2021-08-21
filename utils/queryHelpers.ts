@@ -8,6 +8,8 @@ export type OrderByType = {
   direction: "ASC" | "DESC";
 };
 
+type ValueOf<T> = T[keyof T];
+
 export type QueryArgs = {
   where?: Where;
   batchedKeys?: BatchedKeys;
@@ -34,8 +36,7 @@ export const prismaPartition = (args: QueryArgs) => {
                 args.order == undefined
                   ? Prisma.empty
                   : Prisma.sql`ORDER BY ${Prisma.join(
-                      args.order.map((item) =>
-                        Prisma.sql([`${item.field} ${item.direction}`])
+                      args.order.map((item) => sqlWrap(format('%I %s', item.field, item.direction))
                       )
                     )}`
               }
@@ -52,8 +53,7 @@ export const sqlWrap = (s:string) => {
 export const batchedKeysToSQL = (batchedKeys?: BatchedKeys) => {
   if (!batchedKeys || Object.keys(batchedKeys).length == 0) return Prisma.empty;
   return Prisma.join(
-    Object.keys(batchedKeys).map((field) =>
-      Prisma.sql([`${field} IN (`, ")"], Prisma.join(batchedKeys[field]))
+    Object.keys(batchedKeys).map((field) => handleOperator("in", field, batchedKeys[field])
     ),
     " OR "
   );
@@ -61,8 +61,7 @@ export const batchedKeysToSQL = (batchedKeys?: BatchedKeys) => {
 
 export const selectFields = (fields?: string[], fmt: ("%%" | "%I" | "%L" | "%s") = "%I") => {
   if (fields == undefined) return [];
-  const joined = fields.map((field) => Prisma.sql([format(`${fmt}`, field)]));
-  console.log(joined)
+  const joined = fields.map((field) => sqlWrap(format(`${fmt}`, field)));
   return joined;
 };
 
@@ -101,9 +100,9 @@ export type FieldOptionsInt = {
 };
 
 export const handleOperator = (
-  operation: string,
+  operation: keyof FieldOptionsString | keyof FieldOptionsInt,
   field: string,
-  value: any
+  value: ValueOf<FieldOptionsString> | ValueOf<FieldOptionsInt>
 ) => {
   switch (operation) {
     case "is": {
@@ -150,7 +149,6 @@ export const handleOperator = (
     }
     default: {
       throw new Error(`Invalid operator ${operation}`);
-      break;
     }
   }
 };
@@ -189,8 +187,8 @@ const prismaWhereHelper = (where?: Where | Where[], key?: string): Sql => {
     const ops = Object.keys(operation);
     if (ops.length !== 1)
       throw new Error('Operation can only have one key. name: {is: "Bob"}');
-    const op = ops[0];
-    const value = operation[op];
+    const op = ops[0] as keyof FieldOptionsString | keyof FieldOptionsInt;
+    const value = operation[op] as ValueOf<FieldOptionsString> | ValueOf<FieldOptionsInt>;
     return handleOperator(op, field, value);
   }
 };

@@ -8,8 +8,8 @@ export default gql`
     l_name: String
     phone: String
     email: String
-    password_hash: String
-    created_at: String
+    email_verified: Boolean
+    phone_verified: Boolean
   }
 
   type UserEdge {
@@ -51,11 +51,16 @@ export default gql`
   extend type Query {
     user(
     user_id: String!): UserEdge
+
     users(
     FIRST: Int
     AFTER: String
     ORDER: [UserOrderBy]
     WHERE:UserWhere): UserConnection
+  }
+
+  extend type Mutation {
+    user(username: String, password: String, f_name: String, l_name: String, phone: String, email: String): UserEdge
   }
 
 `;

@@ -8,12 +8,15 @@ datasource db {
 }
 
 model users {
-  id            Int       @id @default(autoincrement())
-  user_id       String?   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  f_name        String?   @db.VarChar
-  l_name        String?   @db.VarChar
-  phone         String?   @db.VarChar
-  email         String?   @db.VarChar
-  password_hash String?   @db.VarChar
-  created_at    DateTime? @db.Timestamp(6)
+  id             Int       @id @default(autoincrement())
+  user_id        String?   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username       String?   @unique @db.VarChar
+  f_name         String?   @db.VarChar
+  l_name         String?   @db.VarChar
+  phone          String?   @unique @db.VarChar
+  email          String?   @unique @db.VarChar
+  password_hash  String?   @db.VarChar
+  email_verified Boolean?  @default(false)
+  phone_verified Boolean?  @default(false)
+  created_at     DateTime? @db.Timestamp(6)
 }

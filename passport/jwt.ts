@@ -13,7 +13,8 @@ const PUBLIC_KEY = fs.readFileSync(
   );
 
   
-export const signJWT = async ({user_id}:{user_id:String}) => {
+export const signJWT = async ({user_id}:{user_id:string|null}) => {
+    if(!user_id) throw new Error(`user_id can not be null. Value: ${user_id}`)
     return new Promise((resolve, reject)=>{
         const token = jwt.sign({ user_id }, PRIVATE_KEY, { algorithm: 'RS256'})
         resolve(token)

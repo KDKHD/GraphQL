@@ -43,7 +43,6 @@ export const resolvers = {
           first: args.FIRST,
           order: args.ORDER,
           partitionBy: ["f_name"],
-          paginateFiled: "p_users.partition_value",
           many: true,
         })
           .load([["f_name", "Kenneth"]])
