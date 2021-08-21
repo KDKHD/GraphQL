@@ -11,21 +11,21 @@ export const passwordValidator = Joi.string()
     const errors = err.map((e) => {
       switch (e.code) {
         case "string.min": {
-          return "Be at least 7 characters long.";
+          return "Must be at least 7 characters long.";
         }
         case "string.pattern.name": {
           switch ((e as any)?.local?.name) {
             case "case1": {
-              return "Contain at least one number.";
+              return "Must contain at least one number.";
             }
             case "case2": {
-              return "Contain at least one upper case character.";
+              return "Must contain at least one upper case character.";
             }
             case "case3": {
-              return "Contain at least one lower case character.";
+              return "Must contain at least one lower case character.";
             }
             case "case4": {
-              return `Contain at least one of these: $ & + , : ; = ? @ # | / " { } = ' < > £ . ^ * ( ) % ! - special characters.`;
+              return `Must contain at least one of these: $ & + , : ; = ? @ # | / " { } = ' < > £ . ^ * ( ) % ! - special characters.`;
             }
             default: {
               return e.message;

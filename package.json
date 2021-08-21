@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "@prisma/client": "^2.29.1",
+    "apollo-server-core": "^3.1.2",
     "apollo-server-express": "^3.1.2",
     "bcrypt": "^5.0.1",
     "dataloader": "^2.0.0",

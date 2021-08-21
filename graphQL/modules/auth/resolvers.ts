@@ -28,7 +28,7 @@ export const resolvers = {
         phone?: string;
         email?: string;
       },
-      { res }: any
+      _context: any
     ) => {
       const user = await AuthProvider.signUpWithUsernameAndPassword(args);
       if (user) {
@@ -42,7 +42,7 @@ export const resolvers = {
         username: string;
         password: string;
       },
-      { res }: any
+      _context: any
     ) => {
       const user = await AuthProvider.signInWithUsernameAndPassword(args);
       if (user) {
@@ -63,7 +63,7 @@ export const resolvers = {
         phone: string;
         email?: string;
       },
-      { res }: any
+      _context: any
     ) => {
       const user = await AuthProvider.signUpWithPhone(args);
       if (user) {
@@ -116,7 +116,7 @@ export const resolvers = {
         phone?: string;
         email: string;
       },
-      { res }: any
+      _context: any
     ) => {
       const user = await AuthProvider.signUpWithEmail(args);
       if (user) {

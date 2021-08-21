@@ -94,7 +94,7 @@ export class AuthProvider {
         },
       });
     }
-    throw new UserInputError("Phone verification failed.");
+    throw new UserInputError("Phone verification failed. Please try again.");
   }
 
   static async signUpWithPhone(args: {
@@ -153,7 +153,7 @@ export class AuthProvider {
         },
       });
     }
-    throw new UserInputError("Email verification failed.");
+    throw new UserInputError("Email verification failed. Please try again.");
   }
 
   static async signUpWithEmail(args: {
