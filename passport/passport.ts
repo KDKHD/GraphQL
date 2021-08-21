@@ -6,6 +6,7 @@ import fs from "fs";
 import dotenv from "dotenv";
 import path from "path";
 import { root } from "@utils/root";
+import { prismaClient } from "@root/dbconnection/client";
 
 dotenv.config();
 
@@ -24,10 +25,8 @@ const params = {
 };
 
 passport.use(
-  new Strategy(params, async (payload: { user_id: String }, done: any) => {
-    const user = users.accounts.find((user) => {
-      return user.id == payload.user_id;
-    });
+  new Strategy(params, async (payload: { user_id: string }, done: any) => {
+    const user = await prismaClient.users.findFirst({where:{user_id:payload.user_id}})
     return done(null, user);
   })
 );

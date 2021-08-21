@@ -25,11 +25,11 @@ export default gql`
     signInWithUsernameAndPassword(username: String!, password: String!): AuthEdge
 
     signUpWithPhone(username: String, password: String, f_name: String, l_name: String, phone: String!, email: String): AuthEdge
-    signInWithPhoneInit(phone: String!): InitVerification
-    signInWithPhone(to: String!, code: String!): AuthEdge
+    verifyPhoneInit(phone: String): InitVerification # phone is required when user is not logged in
+    verifyPhone(to: String, code: String!): AuthEdge # to is required when user is not logged in
 
     signUpWithEmail(username: String, password: String, f_name: String, l_name: String, phone: String, email: String!): AuthEdge
-    signInWithEmailInit(email: String!): InitVerification
-    signInWithEmail(to: String!, code: String!): AuthEdge
+    verifyEmailInit(email: String): InitVerification # email is required when user is not logged in
+    verifyEmail(to: String, code: String!): AuthEdge # to is required when user is not logged in
   }
 `;

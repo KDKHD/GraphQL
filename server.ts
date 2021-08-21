@@ -3,6 +3,7 @@ import { ApolloServer } from "apollo-server-express";
 import { schema } from "./graphQL/modules";
 import dotenv from "dotenv";
 import { authMiddleware } from "./middleware/auth/auth";
+import { users } from "@prisma/client";
 
 dotenv.config();
 
@@ -17,7 +18,7 @@ export default async function startApolloServer() {
       return {
         res,
         req,
-        user: (req as any).user,
+        logged_in_user: (req as any).user as users,
       };
     },
     // @ts-expect-error: Ignore this type error

@@ -1,3 +1,4 @@
+import { users } from "@prisma/client";
 import { signJWT } from "@root/passport/jwt";
 import { edgeItemToNode } from "@utils/dataloaderHelper";
 import { UsersProvider } from "../user/provider";
@@ -5,17 +6,21 @@ import { AuthProvider } from "./provider";
 
 export const resolvers = {
   Query: {
-    signedInUser: async (_parent: any, _args: any, { user }: any) => {
-      return user;
+    signedInUser: async (
+      _parent: any,
+      _args: any,
+      { logged_in_user }: { logged_in_user: users }
+    ) => {
+      return edgeItemToNode(logged_in_user);
     },
   },
   Mutation: {
     /**
      * Username Password
-     */ 
+     */
     signUpWithUsernameAndPassword: async (
       _parent: any,
-      args:{
+      args: {
         username: string;
         password: string;
         f_name?: string;
@@ -47,7 +52,7 @@ export const resolvers = {
     },
     /**
      * Phone
-     */ 
+     */
     signUpWithPhone: async (
       _parent: any,
       args: {
@@ -66,28 +71,33 @@ export const resolvers = {
         return edgeItemToNode({ token: token, user_id: user.user_id });
       }
     },
-    signInWithPhoneInit: async (
+    verifyPhoneInit: async (
       _parent: any,
       args: {
         phone: string;
       },
-      { res }: any
+      { logged_in_user }: { logged_in_user: users }
     ) => {
-      const verification_check = await AuthProvider.signInWithPhoneInit(args);
+      const verification_check = await AuthProvider.verifyPhoneInit({
+        phone: logged_in_user.phone || args.phone,
+      });
       return {
         to: verification_check.to,
-        status: verification_check.status
-      }
+        status: verification_check.status,
+      };
     },
-    signInWithPhone: async (
+    verifyPhone: async (
       _parent: any,
       args: {
         to: string;
-        code: string
+        code: string;
       },
-      { res }: any
+      { logged_in_user }: { logged_in_user: users }
     ) => {
-      const user = await AuthProvider.signInWithPhone(args);
+      const user = await AuthProvider.verifyPhone({
+        to: logged_in_user.phone || args.to,
+        code: args.code,
+      });
       if (user) {
         const token = await signJWT({ user_id: user.user_id });
         return edgeItemToNode({ token: token, user_id: user.user_id });
@@ -95,7 +105,7 @@ export const resolvers = {
     },
     /**
      * Email
-     */ 
+     */
     signUpWithEmail: async (
       _parent: any,
       args: {
@@ -114,28 +124,33 @@ export const resolvers = {
         return edgeItemToNode({ token: token, user_id: user.user_id });
       }
     },
-    signInWithEmailInit: async (
+    verifyEmailInit: async (
       _parent: any,
       args: {
         email: string;
       },
-      { res }: any
+      { logged_in_user }: { logged_in_user: users }
     ) => {
-      const verification_check = await AuthProvider.signInWithEmailInit(args);
+      const verification_check = await AuthProvider.verifyEmailInit({
+        email: logged_in_user.email || args.email,
+      });
       return {
         to: verification_check.to,
-        status: verification_check.status
-      }
+        status: verification_check.status,
+      };
     },
-    signInWithEmail: async (
+    verifyEmail: async (
       _parent: any,
       args: {
         to: string;
-        code: string
+        code: string;
       },
-      { res }: any
+      { logged_in_user }: { logged_in_user: users }
     ) => {
-      const user = await AuthProvider.signInWithEmail(args);
+      const user = await AuthProvider.verifyEmail({
+        to: logged_in_user.email || args.to,
+        code: args.code,
+      });
       if (user) {
         const token = await signJWT({ user_id: user.user_id });
         return edgeItemToNode({ token: token, user_id: user.user_id });

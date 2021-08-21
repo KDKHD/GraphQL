@@ -67,7 +67,9 @@ export class AuthProvider {
       .catch(dbErrorHandler);
   }
 
-  static async signInWithPhoneInit(args: { phone: string }) {
+  static async verifyPhoneInit(args: { phone: string }) {
+    if(args.phone == null) throw new UserInputError("Phone not provided.");
+
     const user = await prismaClient.users.findFirst({
       where: { phone: args.phone.replace(/\s/g, "") },
     });
@@ -75,7 +77,9 @@ export class AuthProvider {
     throw new UserInputError("Invalid Phone number");
   }
 
-  static async signInWithPhone(args: { to: string; code: string }) {
+  static async verifyPhone(args: { to: string; code: string }) {
+    if(args.to == null) throw new UserInputError("To not provided.");
+
     const verification_check = await verifyPhoneVerification({
       to: args.to,
       code: args.code,
@@ -122,7 +126,9 @@ export class AuthProvider {
       .catch(dbErrorHandler);
   }
 
-  static async signInWithEmailInit(args: { email: string }) {
+  static async verifyEmailInit(args: { email: string }) {
+    if(args.email == null) throw new UserInputError("Email not provided.");
+
     const user = await prismaClient.users.findFirst({
       where: { email: args.email },
     });
@@ -130,7 +136,9 @@ export class AuthProvider {
     throw new UserInputError("Invalid email");
   }
 
-  static async signInWithEmail(args: { to: string; code: string }) {
+  static async verifyEmail(args: { to: string; code: string }) {
+    if(args.to == null) throw new UserInputError("To not provided.");
+
     const verification_check = await verifyEmailVerification({
       to: args.to,
       code: args.code,

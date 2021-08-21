@@ -10,7 +10,7 @@ export const resolvers = {
     user: async (
       _parent: any,
       args: { user_id: string },
-      { userInfo }: any,
+      _context: any,
       info: any
     ) => {
       const userProvider = new UsersProvider()
@@ -27,25 +27,22 @@ export const resolvers = {
         ORDER: OrderByType[];
         WHERE: Where;
       },
-      { userInfo }: any,
+      _context: any,
       info: any
     ) => {
       const userProvider = new UsersProvider()
-      //await UsersProvider.usersCountDataLoaderManager({where:args.WHERE, partitionBy:["f_name"]}).load([["f_name", "Kenneth"]]).then(res=>console.log("HE",res))
       return {
         totalCount: userProvider.countDataLoaderManager({
           where: args.WHERE,
-          partitionBy: ["f_name"],
-        }).load([["f_name", "Kenneth"]]),
+        }).load([]),
         edges: userProvider.dataLoaderManager({
           where: args.WHERE,
           after: args.AFTER,
           first: args.FIRST,
           order: args.ORDER,
-          partitionBy: ["f_name"],
           many: true,
         })
-          .load([["f_name", "Kenneth"]])
+          .load([])
           .then(arrToEdge),
       };
     },
