@@ -8,7 +8,7 @@
     "prod": "node build/start.js"
   },
   "author": "Kenneth Kreindler",
-  "license": "ISC",
+  "license": "Proprietary",
   "_moduleAliases": {
     "@models/*": "build/models/*",
     "@modules/*": "build/graphQL/modules/*",
