@@ -1,5 +1,6 @@
 import { Prisma, users } from "@prisma/client";
 import { prismaClient } from "@root/dbconnection/client";
+import { bcryptHash } from "@utils/bcrypt";
 import {
   afterLimit,
   prismaPartition,
@@ -8,14 +9,18 @@ import {
   selectFields,
   whereGen,
 } from "@utils/queryHelpers";
+import { passwordValidator } from "@validators/user";
 import { CountQuery, DataLoadersStore, ParentProvider } from "..";
 import { CountDataLoadersStore } from "../parent";
 
-
+interface customUsersUpdateManyMutationInput
+  extends Prisma.usersUpdateInput {
+  password?: string;
+}
 /**
  * User Provider provides the data required by ParentProvider
  * to group results.
- */ 
+ */
 export class UsersProvider extends ParentProvider {
   /**
    * Store reusable dataloader here
@@ -33,7 +38,7 @@ export class UsersProvider extends ParentProvider {
 
   /**
    * Data batch function. Returns [partitionField1, partitionField2, ...other table fields]
-   * 
+   *
    */
   batchFunction(args: QueryArgs) {
     return prismaClient.$queryRaw<users[]>(
@@ -48,7 +53,7 @@ export class UsersProvider extends ParentProvider {
 
   /**
    * Count batch function. Returns [partitionField1, partitionField2, ..., count][].
-   * We must return the partitionFields so that we can match count with a specific 
+   * We must return the partitionFields so that we can match count with a specific
    * key.
    */
   countBatchFunction(args: QueryArgs) {
@@ -65,5 +70,33 @@ export class UsersProvider extends ParentProvider {
         args
       )
     );
+  }
+
+  async mutateUser({
+    where,
+    data,
+  }: {
+    where: Prisma.usersWhereUniqueInput;
+    data: customUsersUpdateManyMutationInput;
+  }) {
+    data.password != null &&
+      passwordValidator
+        .required()
+        .validate(data.password, { abortEarly: false });
+
+    const passwordHash =
+      data.password != null ? await bcryptHash(data.password) : null;
+
+    return prismaClient.users.update({
+      data: {
+        ...(data.username && { username: data.username }),
+        ...(data.password && { password_hash: passwordHash }),
+        ...(data.f_name && { f_name: data.f_name }),
+        ...(data.l_name && { l_name: data.l_name }),
+        ...(data.phone && { phone: data.phone, phone_verified: false }),
+        ...(data.email && { email: data.email, email_verified: false }),
+      },
+      where,
+    });
   }
 }

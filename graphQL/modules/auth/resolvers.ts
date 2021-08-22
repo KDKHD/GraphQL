@@ -1,6 +1,7 @@
 import { users } from "@prisma/client";
 import { signJWT } from "@root/passport/jwt";
 import { edgeItemToNode } from "@utils/dataloaderHelper";
+import { QueryArgsType } from "@utils/queryHelpers";
 import { UsersProvider } from "../user/provider";
 import { AuthProvider } from "./provider";
 
@@ -45,6 +46,41 @@ export const resolvers = {
       _context: any
     ) => {
       const user = await AuthProvider.signInWithUsernameAndPassword(args);
+      if (user) {
+        const token = await signJWT({ user_id: user.user_id });
+        return edgeItemToNode({ token: token, user_id: user?.user_id });
+      }
+    },
+    /**
+     * Email Password
+     */
+     signUpWithEmailAndPassword: async (
+      _parent: any,
+      args: {
+        username?: string;
+        password: string;
+        f_name?: string;
+        l_name?: string;
+        phone?: string;
+        email: string;
+      },
+      _context: any
+    ) => {
+      const user = await AuthProvider.signUpWithEmailAndPassword(args);
+      if (user) {
+        const token = await signJWT({ user_id: user.user_id });
+        return edgeItemToNode({ token: token, user_id: user.user_id });
+      }
+    },
+    signInWithEmailAndPassword: async (
+      _parent: any,
+      args: {
+        email: string;
+        password: string;
+      },
+      _context: any
+    ) => {
+      const user = await AuthProvider.signInWithEmailAndPassword(args);
       if (user) {
         const token = await signJWT({ user_id: user.user_id });
         return edgeItemToNode({ token: token, user_id: user?.user_id });
@@ -161,7 +197,7 @@ export const resolvers = {
     user: async (parent: { user_id: string }, args: any, { res }: any) => {
       const userProvider = new UsersProvider();
       return userProvider
-        .dataLoaderManager({})
+        .dataLoaderManager({type: QueryArgsType.Query})
         .load([["user_id", parent.user_id]])
         .then(edgeItemToNode);
     },

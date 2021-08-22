@@ -8,6 +8,8 @@ import { ApolloServerPluginInlineTrace } from "apollo-server-core";
 
 dotenv.config();
 
+const PORT = process.env.PORT
+
 export default async function startApolloServer() {
   const app = express();
 
@@ -32,10 +34,10 @@ export default async function startApolloServer() {
   server.applyMiddleware({ app });
 
   await new Promise((resolve) =>
-    app.listen({ port: process.env.PORT }, resolve as () => void)
+    app.listen({ port: PORT }, resolve as () => void)
   );
 
-  console.log(`🚀 Server ready at http://localhost:${process.env.PORT}${server.graphqlPath}`);
+  console.log(`🚀 Server ready at http://localhost:${PORT}${server.graphqlPath}`);
 
   return { server, app };
 }

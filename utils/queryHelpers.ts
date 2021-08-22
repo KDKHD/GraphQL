@@ -10,6 +10,8 @@ export type OrderByType = {
 
 type ValueOf<T> = T[keyof T];
 
+export enum QueryArgsType {"Query" , "Mutation"}
+
 export type QueryArgs = {
   where?: Where;
   batchedKeys?: BatchedKeys;
@@ -19,6 +21,7 @@ export type QueryArgs = {
   order?: OrderByType[];
   paginateFiled?: string;
   many?:boolean
+  type?: QueryArgsType
 };
 
 const HARD_LIMIT = 15;

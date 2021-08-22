@@ -9,7 +9,7 @@ datasource db {
 
 model users {
   id             Int       @id @default(autoincrement())
-  user_id        String?   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String    @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   username       String?   @unique @db.VarChar
   f_name         String?   @db.VarChar
   l_name         String?   @db.VarChar
