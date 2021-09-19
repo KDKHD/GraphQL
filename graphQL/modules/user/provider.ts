@@ -1,6 +1,6 @@
-import { Prisma, users } from "@prisma/client";
+import { emails, phone_numbers, Prisma, users } from "@prisma/client";
 import { prismaClient } from "@root/dbconnection/client";
-import { bcryptHash } from "@utils/bcrypt";
+import { bcryptHash, verifyHash } from "@utils/bcrypt";
 import {
   afterLimit,
   prismaPartition,
@@ -11,10 +11,11 @@ import {
 } from "@utils/queryHelpers";
 import { passwordValidator } from "@validators/user";
 import { CountQuery, DataLoadersStore, ParentProvider } from "..";
+import { EmailsProvider } from "../email/provider";
 import { CountDataLoadersStore } from "../parent";
+import { PhoneNumbersProvider } from "../phone_number/provider";
 
-interface customUsersUpdateManyMutationInput
-  extends Prisma.usersUpdateInput {
+interface customUsersUpdateManyMutationInput extends Prisma.usersUpdateInput {
   password?: string;
 }
 /**
@@ -87,16 +88,75 @@ export class UsersProvider extends ParentProvider {
     const passwordHash =
       data.password != null ? await bcryptHash(data.password) : null;
 
-    return prismaClient.users.update({
+    const user = await prismaClient.users.update({
       data: {
         ...(data.username && { username: data.username }),
         ...(data.password && { password_hash: passwordHash }),
         ...(data.f_name && { f_name: data.f_name }),
         ...(data.l_name && { l_name: data.l_name }),
-        ...(data.phone && { phone: data.phone, phone_verified: false }),
-        ...(data.email && { email: data.email, email_verified: false }),
       },
       where,
     });
+
+    return user
+  }
+
+  /**
+   * Other Functions
+   */
+
+  static findFirstUsers(args: Prisma.usersFindFirstArgs) {
+    return prismaClient.users.findFirst(args);
+  }
+
+  static verifyPassword({
+    user,
+    password,
+  }: {
+    user: users | null;
+    password: string;
+  }): Promise<boolean> {
+    return new Promise(async (resolve, reject) => {
+      if (user && user.password_hash) {
+        const hashMatch = await verifyHash({
+          encrypted: user.password_hash,
+          plainText: password,
+        });
+        resolve(hashMatch as boolean);
+      } else {
+        resolve(false);
+      }
+    });
+  }
+
+  static async getUserByEmail({ email }: { email: string }) {
+    const emailsProvider = new EmailsProvider();
+    const usersProvider = new UsersProvider();
+
+    const emailRes = (await emailsProvider
+      .dataLoaderManager({
+        many: false,
+      })
+      .load([["email", email]])) as emails;
+
+    return usersProvider
+      .dataLoaderManager({
+        many: false,
+      })
+      .load([["user_id", emailRes.user_id]]);
+  }
+
+  static async getUserByPhone({ phone }: { phone: string }) {
+    const phoneNumbersProvider = new PhoneNumbersProvider();
+    const usersProvider = new UsersProvider();
+    const phoneRes = (await phoneNumbersProvider
+      .dataLoaderManager({ many: false })
+      .load([["phone", phone.replace(/\s/g, "")]])) as phone_numbers;
+
+    return usersProvider
+      .dataLoaderManager({
+        many: false,
+      })
+      .load([["user_id", phoneRes.user_id]]);
   }
 }

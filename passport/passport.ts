@@ -1,5 +1,3 @@
-import { users } from "@root/test/users";
-
 import passport from "passport";
 import passportJWT, { ExtractJwt } from "passport-jwt";
 import fs from "fs";

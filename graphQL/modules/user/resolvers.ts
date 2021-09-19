@@ -1,6 +1,8 @@
 import { users } from "@prisma/client";
 import { arrToEdge, edgeItemToNode } from "@utils/dataloaderHelper";
 import { OrderByType, QueryArgsType, Where } from "@utils/queryHelpers";
+import { EmailsProvider } from "../email/provider";
+import { PhoneNumbersProvider } from "../phone_number/provider";
 import { UsersProvider } from "./provider";
 
 export const resolvers = {
@@ -61,16 +63,42 @@ export const resolvers = {
         phone?: string;
         email?: string;
       },
-      { logged_in_user }: { logged_in_user: users },
+      { logged_in_user }: { logged_in_user: users }
     ) => {
       const userProvider = new UsersProvider();
 
       return userProvider
         .mutateUser({
-          where: { user_id: logged_in_user.user_id as string},
+          where: { user_id: logged_in_user.user_id as string },
           data: args,
         })
         .then(edgeItemToNode);
+    },
+  },
+
+  UserNode: {
+    emails: async (parent: { user_id: string }, args: any, { res }: any) => {
+      const emailsProvider = new EmailsProvider();
+      return emailsProvider
+        .dataLoaderManager({ type: QueryArgsType.Query })
+        .load([["user_id", parent.user_id]])
+        .then(edgeItemToNode);
+    },
+    phone_numbers: async (
+      parent: { user_id: string },
+      args: any,
+      { res }: any
+    ) => {
+      const phoneNumbersProvider = new PhoneNumbersProvider();
+      return {
+        totalCount: phoneNumbersProvider
+        .countDataLoaderManager({ partitionBy:["user_id"], type: QueryArgsType.Query, many: true })
+        .load([["user_id", parent.user_id]]),
+        edges: phoneNumbersProvider
+          .dataLoaderManager({type: QueryArgsType.Query, many: true })
+          .load([["user_id", parent.user_id]])
+          .then(arrToEdge),
+      };
     },
   },
 };

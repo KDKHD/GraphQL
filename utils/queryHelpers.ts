@@ -102,6 +102,10 @@ export type FieldOptionsInt = {
   not_ends_with?: number;
 };
 
+export type FieldOptionsBoolean = {
+  is?: Boolean;
+};
+
 export const handleOperator = (
   operation: keyof FieldOptionsString | keyof FieldOptionsInt,
   field: string,

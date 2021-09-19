@@ -54,7 +54,7 @@ export const resolvers = {
     /**
      * Email Password
      */
-     signUpWithEmailAndPassword: async (
+    signUpWithEmailAndPassword: async (
       _parent: any,
       args: {
         username?: string;
@@ -114,8 +114,10 @@ export const resolvers = {
       },
       { logged_in_user }: { logged_in_user: users }
     ) => {
+      // TODO: add check to be logged in. If you want to init a verification request you must be logged in
       const verification_check = await AuthProvider.verifyPhoneInit({
-        phone: logged_in_user.phone || args.phone,
+        phone: args.phone,
+        user_id: logged_in_user.user_id
       });
       return {
         to: verification_check.to,
@@ -131,8 +133,9 @@ export const resolvers = {
       { logged_in_user }: { logged_in_user: users }
     ) => {
       const user = await AuthProvider.verifyPhone({
-        to: logged_in_user.phone || args.to,
+        to: args.to,
         code: args.code,
+        user_id: logged_in_user.user_id,
       });
       if (user) {
         const token = await signJWT({ user_id: user.user_id });
@@ -167,8 +170,11 @@ export const resolvers = {
       },
       { logged_in_user }: { logged_in_user: users }
     ) => {
+      // TODO: add check to be logged in. If you want to init a verification request you must be logged in
+
       const verification_check = await AuthProvider.verifyEmailInit({
-        email: logged_in_user.email || args.email,
+        email: args.email,
+        user_id: logged_in_user.user_id
       });
       return {
         to: verification_check.to,
@@ -184,9 +190,11 @@ export const resolvers = {
       { logged_in_user }: { logged_in_user: users }
     ) => {
       const user = await AuthProvider.verifyEmail({
-        to: logged_in_user.email || args.to,
+        to: args.to,
         code: args.code,
+        user_id: logged_in_user.user_id,
       });
+
       if (user) {
         const token = await signJWT({ user_id: user.user_id });
         return edgeItemToNode({ token: token, user_id: user.user_id });
@@ -197,7 +205,7 @@ export const resolvers = {
     user: async (parent: { user_id: string }, args: any, { res }: any) => {
       const userProvider = new UsersProvider();
       return userProvider
-        .dataLoaderManager({type: QueryArgsType.Query})
+        .dataLoaderManager({ type: QueryArgsType.Query })
         .load([["user_id", parent.user_id]])
         .then(edgeItemToNode);
     },

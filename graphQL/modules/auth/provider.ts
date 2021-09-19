@@ -1,3 +1,4 @@
+import { emails, phone_numbers, users } from ".prisma/client";
 import { prismaClient } from "@root/dbconnection/client";
 import { bcryptHash, verifyHash } from "@utils/bcrypt";
 import { dbErrorHandler } from "@utils/dbErrors";
@@ -11,6 +12,10 @@ import {
 } from "@utils/phoneVerification";
 import { passwordValidator } from "@validators/user";
 import { UserInputError } from "apollo-server-express";
+import { VerificationInstance } from "twilio/lib/rest/verify/v2/service/verification";
+import { EmailsProvider } from "../email/provider";
+import { PhoneNumbersProvider } from "../phone_number/provider";
+import { UsersProvider } from "../user/provider";
 export class AuthProvider {
   /**
    * Username Password
@@ -22,21 +27,16 @@ export class AuthProvider {
     username: string;
     password: string;
   }) {
-    const user = await prismaClient.users.findFirst({
+    const user = await UsersProvider.findFirstUsers({
       where: {
         username: username,
       },
     });
 
-    if (user && user.password_hash) {
-      // Verify password
-      const hashMatch = await verifyHash({
-        encrypted: user.password_hash,
-        plainText: password,
-      });
-      if (hashMatch) {
-        return user;
-      }
+    const hashMatch = await UsersProvider.verifyPassword({ user, password });
+
+    if (hashMatch) {
+      return user;
     }
 
     throw new UserInputError("Login details incorrect.");
@@ -56,18 +56,32 @@ export class AuthProvider {
         .validate(args.password, { abortEarly: false });
 
     const passwordHash = await bcryptHash(args.password);
-    return prismaClient.users
+    const user = await prismaClient.users
       .create({
         data: {
           username: args.username,
           password_hash: passwordHash,
           f_name: args.f_name,
           l_name: args.l_name,
-          phone: args.phone,
-          email: args.email,
         },
       })
       .catch(dbErrorHandler);
+
+    if (user && args.email) {
+      EmailsProvider.addEmail({
+        user_id: user.user_id as string,
+        email: args.email,
+      });
+    }
+
+    if (user && args.phone) {
+      PhoneNumbersProvider.addPhoneNumber({
+        user_id: user.user_id as string,
+        phone: args.phone,
+      });
+    }
+
+    return user;
   }
 
   /**
@@ -80,11 +94,20 @@ export class AuthProvider {
     email: string;
     password: string;
   }) {
-    const user = await prismaClient.users.findFirst({
-      where: {
-        email: email,
-      },
-    });
+    const emailsProvider = new EmailsProvider();
+    const usersProvider = new UsersProvider();
+
+    const emailRes = (await emailsProvider
+      .dataLoaderManager({
+        many: false,
+      })
+      .load([["email", email]])) as emails;
+
+    const user = (await usersProvider
+      .dataLoaderManager({
+        many: false,
+      })
+      .load([["user_id", emailRes.user_id]])) as users;
 
     if (user && user.password_hash) {
       // Verify password
@@ -114,49 +137,76 @@ export class AuthProvider {
         .validate(args.password, { abortEarly: false });
 
     const passwordHash = await bcryptHash(args.password);
-    return prismaClient.users
+    const user = await prismaClient.users
       .create({
         data: {
           username: args.username,
           password_hash: passwordHash,
           f_name: args.f_name,
           l_name: args.l_name,
-          phone: args.phone,
-          email: args.email,
         },
       })
       .catch(dbErrorHandler);
+
+    if (user && args.email) {
+      EmailsProvider.addEmail({
+        user_id: user.user_id as string,
+        email: args.email,
+      });
+    }
+
+    if (user && args.phone) {
+      PhoneNumbersProvider.addPhoneNumber({
+        user_id: user.user_id as string,
+        phone: args.phone,
+      });
+    }
+
+    return user;
   }
 
   /**
    * Phone
    */
-  static async verifyPhoneInit(args: { phone: string }) {
+  static async verifyPhoneInit(args: {
+    phone: string;
+    user_id: string;
+  }): Promise<VerificationInstance> {
     if (args.phone == null) throw new UserInputError("Phone not provided.");
-
-    const user = await prismaClient.users.findFirst({
-      where: { phone: args.phone.replace(/\s/g, "") },
-    });
-    if (user != null) return sendPhoneVerification(args.phone);
-    throw new UserInputError("Invalid Phone number");
+    return PhoneNumbersProvider.addPhoneNumber({
+      phone: args.phone,
+      user_id: args.user_id,
+    }).then(() => sendPhoneVerification(args.phone));
   }
 
-  static async verifyPhone(args: { to: string; code: string }) {
+  static async verifyPhone(args: {
+    to: string;
+    code: string;
+    user_id: string;
+  }) {
     if (args.to == null) throw new UserInputError("To not provided.");
 
     const verification_check = await verifyPhoneVerification({
       to: args.to,
       code: args.code,
     });
+
     if (verification_check.status === "approved") {
-      return prismaClient.users.update({
-        data: {
-          phone_verified: true,
-        },
-        where: {
-          phone: args.to,
-        },
+      await PhoneNumbersProvider.updatePhoneVerified({
+        user_id: args.user_id,
+        phone: args.to,
+        verified: true,
       });
+
+      const usersProvider = new UsersProvider();
+
+      const user = await usersProvider
+        .dataLoaderManager({
+          many: false,
+        })
+        .load([["user_id", args.user_id]]);
+
+      return user;
     }
     throw new UserInputError("Phone verification failed. Please try again.");
   }
@@ -176,34 +226,55 @@ export class AuthProvider {
 
     const passwordHash =
       args.password != null ? await bcryptHash(args.password) : null;
-    return prismaClient.users
+
+    const user = await prismaClient.users
       .create({
         data: {
           username: args.username,
           password_hash: passwordHash,
           f_name: args.f_name,
           l_name: args.l_name,
-          phone: args.phone.replace(/\s/g, ""),
-          email: args.email,
         },
       })
       .catch(dbErrorHandler);
+
+    if (user && args.email) {
+      EmailsProvider.addEmail({
+        user_id: user.user_id as string,
+        email: args.email,
+      });
+    }
+
+    if (user && args.phone) {
+      PhoneNumbersProvider.addPhoneNumber({
+        user_id: user.user_id as string,
+        phone: args.phone,
+      });
+    }
+
+    return user;
   }
 
   /**
    * Email
    */
-  static async verifyEmailInit(args: { email: string }) {
+  static async verifyEmailInit(args: {
+    email: string;
+    user_id: string;
+  }): Promise<VerificationInstance> {
     if (args.email == null) throw new UserInputError("Email not provided.");
 
-    const user = await prismaClient.users.findFirst({
-      where: { email: args.email },
-    });
-    if (user != null) return sendEmailVerification(args.email);
-    throw new UserInputError("Invalid email");
+    return EmailsProvider.addEmail({
+      email: args.email,
+      user_id: args.user_id,
+    }).then(() => sendEmailVerification(args.email));
   }
 
-  static async verifyEmail(args: { to: string; code: string }) {
+  static async verifyEmail(args: {
+    to: string;
+    code: string;
+    user_id: string;
+  }) {
     if (args.to == null) throw new UserInputError("To not provided.");
 
     const verification_check = await verifyEmailVerification({
@@ -211,14 +282,18 @@ export class AuthProvider {
       code: args.code,
     });
     if (verification_check.status === "approved") {
-      return prismaClient.users.update({
-        data: {
-          email_verified: true,
-        },
-        where: {
-          email: args.to,
-        },
+      EmailsProvider.updateEmailVerified({
+        email: args.to,
+        verified: true,
+        user_id: args.user_id,
       });
+      const usersProvider = new UsersProvider();
+      const user = await usersProvider
+        .dataLoaderManager({
+          many: false,
+        })
+        .load([["user_id", args.user_id]]);
+      return user;
     }
     throw new UserInputError("Email verification failed. Please try again.");
   }
@@ -238,17 +313,31 @@ export class AuthProvider {
 
     const passwordHash =
       args.password != null ? await bcryptHash(args.password) : null;
-    return prismaClient.users
+    const user = await prismaClient.users
       .create({
         data: {
           username: args.username,
           password_hash: passwordHash,
           f_name: args.f_name,
           l_name: args.l_name,
-          phone: args.phone,
-          email: args.email,
         },
       })
       .catch(dbErrorHandler);
+
+    if (user && args.email) {
+      EmailsProvider.addEmail({
+        user_id: user.user_id as string,
+        email: args.email,
+      });
+    }
+
+    if (user && args.phone) {
+      PhoneNumbersProvider.addPhoneNumber({
+        user_id: user.user_id as string,
+        phone: args.phone,
+      });
+    }
+
+    return user;
   }
 }

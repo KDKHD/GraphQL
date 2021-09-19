@@ -2,14 +2,12 @@ import { gql } from "graphql-modules";
 
 export default gql`
   type UserNode {
-    id: Int
+    id: ID
     user_id: String
     f_name: String
     l_name: String
-    phone: String
-    email: String
-    email_verified: Boolean
-    phone_verified: Boolean
+    phone_numbers: PhoneConnection
+    emails: EmailConnection
   }
 
   type UserEdge {
