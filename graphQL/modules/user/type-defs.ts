@@ -6,8 +6,18 @@ export default gql`
     user_id: String
     f_name: String
     l_name: String
-    phone_numbers: PhoneConnection
-    emails: EmailConnection
+    phone_numbers(
+      FIRST: Int
+      AFTER: String
+      ORDER: [PhoneOrderBy]
+      WHERE: PhoneWhere
+    ): PhoneConnection
+    emails(
+      FIRST: Int
+      AFTER: String
+      ORDER: [EmailOrderBy]
+      WHERE: EmailWhere
+    ): EmailConnection
   }
 
   type UserEdge {
@@ -26,8 +36,6 @@ export default gql`
     user_id: FieldOptionsString
     f_name: FieldOptionsString
     l_name: FieldOptionsString
-    phone: FieldOptionsString
-    email: FieldOptionsString
     id: FieldOptionsInt
   }
 
@@ -47,18 +55,24 @@ export default gql`
   }
 
   extend type Query {
-    user(
-    user_id: String!): UserEdge
+    user(user_id: String!): UserEdge
 
     users(
-    FIRST: Int
-    AFTER: String
-    ORDER: [UserOrderBy]
-    WHERE:UserWhere): UserConnection
+      FIRST: Int
+      AFTER: String
+      ORDER: [UserOrderBy]
+      WHERE: UserWhere
+    ): UserConnection
   }
 
   extend type Mutation {
-    user(username: String, password: String, f_name: String, l_name: String, phone: String, email: String): UserEdge
+    user(
+      username: String
+      password: String
+      f_name: String
+      l_name: String
+      phone: String
+      email: String
+    ): UserEdge
   }
-
 `;

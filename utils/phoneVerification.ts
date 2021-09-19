@@ -6,7 +6,7 @@ import { UserInputError } from "apollo-server-errors";
 const TWILIO_VERIFICATION_SERVICE_SID = process.env
   .TWILIO_VERIFICATION_SERVICE_SID as string;
 
-export const sendPhoneVerification = async (phone: string) => {
+export const sendPhoneVerification = async ({phone}:{phone: string}) => {
   const phoneNumbersProvider = new PhoneNumbersProvider();
   const phoneRes = (await phoneNumbersProvider
     .dataLoaderManager({ many: false })

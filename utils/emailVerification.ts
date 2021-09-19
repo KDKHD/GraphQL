@@ -5,7 +5,7 @@ import { UserInputError } from "apollo-server-errors";
 
 const TWILIO_VERIFICATION_SERVICE_SID = process.env.TWILIO_VERIFICATION_SERVICE_SID as string
 
-export const sendEmailVerification = async (email:string)=>{
+export const sendEmailVerification = async ({email}:{email:string})=>{
     const emailsProvider = new EmailsProvider();
   const emailRes = await emailsProvider
     .dataLoaderManager({ many: false })

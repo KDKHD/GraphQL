@@ -18,6 +18,18 @@ export default gql`
     edges: [PhoneEdge]
   }
 
+  enum PhoneOrderByField {
+    id
+    user_id
+    phone
+    verified
+  }
+
+  input PhoneOrderBy {
+    field: PhoneOrderByField
+    direction: SortDirectionEnum
+  }
+
   input PhoneWhere {
     OR: [PhoneWhere]
     AND: [PhoneWhere]

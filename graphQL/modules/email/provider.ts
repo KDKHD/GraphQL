@@ -1,6 +1,7 @@
 import { Prisma, emails } from "@prisma/client";
 import { prismaClient } from "@root/dbconnection/client";
 import { bcryptHash, verifyHash } from "@utils/bcrypt";
+import { sendEmailVerification } from "@utils/emailVerification";
 import {
   afterLimit,
   prismaPartition,
@@ -75,14 +76,12 @@ export class EmailsProvider extends ParentProvider {
    */
 
   static addEmail({ user_id, email }: { user_id: string; email: string }) {
-    return AuthProvider.verifyEmailInit({ email }).then(() =>
-      prismaClient.emails.create({
-        data: {
-          user_id,
-          email,
-        },
-      })
-    );
+    return prismaClient.emails.create({
+      data: {
+        user_id,
+        email,
+      },
+    }).then(()=>sendEmailVerification({email}))
   }
 
   static updateEmailVerified({

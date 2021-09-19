@@ -25,4 +25,16 @@ export default gql`
     email: FieldOptionsString
     verified: FieldOptionsBoolean
   }
+
+  enum EmailOrderByField {
+    id
+    user_id
+    email
+  }
+
+  input EmailOrderBy {
+    field: EmailOrderByField
+    direction: SortDirectionEnum
+  }
+
 `;

@@ -79,10 +79,26 @@ export const resolvers = {
   UserNode: {
     emails: async (parent: { user_id: string }, args: any, { res }: any) => {
       const emailsProvider = new EmailsProvider();
-      return emailsProvider
-        .dataLoaderManager({ type: QueryArgsType.Query })
-        .load([["user_id", parent.user_id]])
-        .then(edgeItemToNode);
+      return {
+        totalCount: emailsProvider
+          .countDataLoaderManager({
+            where: args.WHERE,
+            partitionBy: ["user_id"],
+            type: QueryArgsType.Query,
+            many: true,
+          })
+          .load([["user_id", parent.user_id]]),
+        edges: emailsProvider
+          .dataLoaderManager({
+            where: args.WHERE,
+            after: args.AFTER,
+            first: args.FIRST,
+            order: args.ORDER,
+            type: QueryArgsType.Query,
+          })
+          .load([["user_id", parent.user_id]])
+          .then(edgeItemToNode),
+      };
     },
     phone_numbers: async (
       parent: { user_id: string },
@@ -92,10 +108,22 @@ export const resolvers = {
       const phoneNumbersProvider = new PhoneNumbersProvider();
       return {
         totalCount: phoneNumbersProvider
-        .countDataLoaderManager({ partitionBy:["user_id"], type: QueryArgsType.Query, many: true })
-        .load([["user_id", parent.user_id]]),
+          .countDataLoaderManager({
+            where: args.WHERE,
+            partitionBy: ["user_id"],
+            type: QueryArgsType.Query,
+            many: true,
+          })
+          .load([["user_id", parent.user_id]]),
         edges: phoneNumbersProvider
-          .dataLoaderManager({type: QueryArgsType.Query, many: true })
+          .dataLoaderManager({
+            where: args.WHERE,
+            after: args.AFTER,
+            first: args.FIRST,
+            order: args.ORDER,
+            type: QueryArgsType.Query,
+            many: true,
+          })
           .load([["user_id", parent.user_id]])
           .then(arrToEdge),
       };

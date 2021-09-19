@@ -176,7 +176,7 @@ export class AuthProvider {
     return PhoneNumbersProvider.addPhoneNumber({
       phone: args.phone,
       user_id: args.user_id,
-    }).then(() => sendPhoneVerification(args.phone));
+    })
   }
 
   static async verifyPhone(args: {
@@ -267,7 +267,7 @@ export class AuthProvider {
     return EmailsProvider.addEmail({
       email: args.email,
       user_id: args.user_id,
-    }).then(() => sendEmailVerification(args.email));
+    })
   }
 
   static async verifyEmail(args: {

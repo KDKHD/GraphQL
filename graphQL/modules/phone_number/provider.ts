@@ -1,6 +1,7 @@
 import { Prisma, phone_numbers } from "@prisma/client";
 import { prismaClient } from "@root/dbconnection/client";
 import { bcryptHash, verifyHash } from "@utils/bcrypt";
+import { sendPhoneVerification } from "@utils/phoneVerification";
 import {
   afterLimit,
   prismaPartition,
@@ -81,32 +82,26 @@ export class PhoneNumbersProvider extends ParentProvider {
     user_id: string;
     phone: string;
   }) {
-    return AuthProvider.verifyPhoneInit({ phone }).then(() =>
-      prismaClient.phone_numbers.create({
-        data: {
-          user_id,
-          phone,
-        },
-      })
-    );
+    return prismaClient.phone_numbers.create({
+      data: {
+        user_id,
+        phone,
+      },
+    }).then(()=>sendPhoneVerification({phone}))
   }
 
   static updatePhoneVerified({
     phone,
     verified = true,
-    user_id
+    user_id,
   }: {
     phone: string;
     verified: boolean;
-    user_id: string
+    user_id: string;
   }) {
-
     return prismaClient.phone_numbers.updateMany({
       where: {
-        AND:[
-          {phone},
-          {user_id}
-        ]
+        AND: [{ phone }, { user_id }],
       },
       data: {
         verified,

@@ -2,6 +2,7 @@ import { users } from "@prisma/client";
 import { signJWT } from "@root/passport/jwt";
 import { edgeItemToNode } from "@utils/dataloaderHelper";
 import { QueryArgsType } from "@utils/queryHelpers";
+import { AuthenticationError } from "apollo-server-core";
 import { UsersProvider } from "../user/provider";
 import { AuthProvider } from "./provider";
 
@@ -114,7 +115,8 @@ export const resolvers = {
       },
       { logged_in_user }: { logged_in_user: users }
     ) => {
-      // TODO: add check to be logged in. If you want to init a verification request you must be logged in
+      if (!logged_in_user) throw new AuthenticationError('You must be logged in.');
+
       const verification_check = await AuthProvider.verifyPhoneInit({
         phone: args.phone,
         user_id: logged_in_user.user_id
@@ -170,7 +172,7 @@ export const resolvers = {
       },
       { logged_in_user }: { logged_in_user: users }
     ) => {
-      // TODO: add check to be logged in. If you want to init a verification request you must be logged in
+      if (!logged_in_user) throw new AuthenticationError('You must be logged in.');
 
       const verification_check = await AuthProvider.verifyEmailInit({
         email: args.email,

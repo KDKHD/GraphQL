@@ -182,7 +182,6 @@ export class ParentProvider {
         // key partitionsKey and value total count.
         const grouped = await this.countBatchFunctionHelper(args).then((res) => {
           return res.reduce((total, next) => {
-            console.log(next)
             const partitionsKey = Object.keys(next)
               .filter((field) => batchedKeysKeys.includes(field))
               .sort()
