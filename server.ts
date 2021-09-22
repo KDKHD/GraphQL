@@ -4,6 +4,8 @@ import { schema } from "./graphQL/modules";
 import dotenv from "dotenv";
 import { authMiddleware } from "./middleware/auth/auth";
 import { users } from "@prisma/client";
+import { ApolloServerPluginInlineTrace, PluginDefinition } from "apollo-server-core";
+require('module-alias/register')
 
 dotenv.config();
 
@@ -23,6 +25,7 @@ export default async function startApolloServer() {
         logged_in_user: (req as any).user as users,
       };
     },
+    plugins: [...(process.env.NODE_ENV != "production" ? [ApolloServerPluginInlineTrace()]:[])],
     
   });
 

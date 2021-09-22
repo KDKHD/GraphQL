@@ -174,9 +174,8 @@ export const prismaWhere = (where?: Where) => {
 const prismaWhereHelper = (where?: Where | Where[], key?: string): Sql => {
   if (where == null || Object.keys(where).length == 0) return Prisma.empty;
   if (Array.isArray(where)) {
-    // inside of AND, OR (array of val)
     return Prisma.join(
-      (where as Where[]).map((arrItem) => prismaWhereHelper(arrItem)),
+      (where as Where[]).filter((arrItem)=>arrItem != null).map((arrItem) => prismaWhereHelper(arrItem)),
       key
     );
   } else {

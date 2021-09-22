@@ -3,6 +3,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   type PhoneNode {
     id: ID
+    phone_number_id: String
     user_id: String
     phone: String
     verified: Boolean
@@ -36,5 +37,16 @@ export default gql`
     user_id: FieldOptionsString
     phone: FieldOptionsString
     verified: FieldOptionsBoolean
+  }
+
+  extend type Query {
+    phone_number(phone_number_id: String!): PhoneEdge
+
+    phone_numbers(
+      FIRST: Int
+      AFTER: String
+      ORDER: [PhoneOrderBy]
+      WHERE: PhoneWhere
+    ): PhoneConnection
   }
 `;

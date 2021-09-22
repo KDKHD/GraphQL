@@ -4,6 +4,7 @@ import { OrderByType, QueryArgsType, Where } from "@utils/queryHelpers";
 import { EmailsProvider } from "../email/provider";
 import { PhoneNumbersProvider } from "../phone_number/provider";
 import { UsersProvider } from "./provider";
+import graphqlFields from 'graphql-fields';
 
 export const resolvers = {
   Query: {
@@ -31,15 +32,16 @@ export const resolvers = {
       _context: any,
       info: any
     ) => {
+      const topLevelFields = graphqlFields(info);
       const userProvider = new UsersProvider();
       return {
-        totalCount: userProvider
+        totalCount: topLevelFields.totalCount && userProvider
           .countDataLoaderManager({
             where: args.WHERE,
             type: QueryArgsType.Query,
           })
           .load([]),
-        edges: userProvider
+        edges: topLevelFields.edges && userProvider
           .dataLoaderManager({
             where: args.WHERE,
             after: args.AFTER,
@@ -77,10 +79,13 @@ export const resolvers = {
   },
 
   UserNode: {
-    emails: async (parent: { user_id: string }, args: any, { res }: any) => {
+    emails: async (parent: { user_id: string }, args: any, _context: any,
+      info: any) => {
+      const topLevelFields = graphqlFields(info);
+
       const emailsProvider = new EmailsProvider();
       return {
-        totalCount: emailsProvider
+        totalCount: topLevelFields.totalCount && emailsProvider
           .countDataLoaderManager({
             where: args.WHERE,
             partitionBy: ["user_id"],
@@ -88,7 +93,7 @@ export const resolvers = {
             many: true,
           })
           .load([["user_id", parent.user_id]]),
-        edges: emailsProvider
+        edges: topLevelFields.edges && emailsProvider
           .dataLoaderManager({
             where: args.WHERE,
             after: args.AFTER,
@@ -103,11 +108,14 @@ export const resolvers = {
     phone_numbers: async (
       parent: { user_id: string },
       args: any,
-      { res }: any
+      _context: any,
+      info: any
     ) => {
+      const topLevelFields = graphqlFields(info);
+
       const phoneNumbersProvider = new PhoneNumbersProvider();
       return {
-        totalCount: phoneNumbersProvider
+        totalCount: topLevelFields.totalCount && phoneNumbersProvider
           .countDataLoaderManager({
             where: args.WHERE,
             partitionBy: ["user_id"],
@@ -115,7 +123,7 @@ export const resolvers = {
             many: true,
           })
           .load([["user_id", parent.user_id]]),
-        edges: phoneNumbersProvider
+        edges: topLevelFields.edges && phoneNumbersProvider
           .dataLoaderManager({
             where: args.WHERE,
             after: args.AFTER,

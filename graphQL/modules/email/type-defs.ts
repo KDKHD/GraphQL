@@ -3,6 +3,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   type EmailNode {
     id: ID
+    email_id: String
     user_id: String
     email: String
     verified: Boolean
@@ -35,6 +36,17 @@ export default gql`
   input EmailOrderBy {
     field: EmailOrderByField
     direction: SortDirectionEnum
+  }
+
+  extend type Query {
+    email(email_id: String!): PhoneEdge
+
+    emails(
+      FIRST: Int
+      AFTER: String
+      ORDER: [PhoneOrderBy]
+      WHERE: PhoneWhere
+    ): EmailConnection
   }
 
 `;

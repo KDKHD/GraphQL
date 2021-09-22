@@ -42,6 +42,7 @@ export class UsersProvider extends ParentProvider {
    *
    */
   batchFunction(args: QueryArgs) {
+
     return prismaClient.$queryRaw<users[]>(
       afterLimit(
         Prisma.sql`(SELECT * , Row_number() ${prismaPartition(

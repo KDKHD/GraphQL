@@ -11,10 +11,12 @@ import {
   whereGen,
 } from "@utils/queryHelpers";
 import { passwordValidator } from "@validators/user";
+import { UserInputError } from "apollo-server-core";
 import { CountQuery, DataLoadersStore, ParentProvider } from "..";
 import { AuthProvider } from "../auth/provider";
 import { CountDataLoadersStore } from "../parent";
 
+const MAX_USER_EMAIL = 1
 /**
  * Emails Provider provides the data required by ParentProvider
  * to group results.
@@ -75,7 +77,15 @@ export class EmailsProvider extends ParentProvider {
    * Other Functions
    */
 
-  static addEmail({ user_id, email }: { user_id: string; email: string }) {
+  static async addEmail({ user_id, email }: { user_id: string; email: string }) {
+    const emailCount = await prismaClient.emails.count({
+      where:{
+        user_id
+      }
+    })
+    if(emailCount>=MAX_USER_EMAIL){
+      throw new UserInputError(`Maximum amount of emails is ${MAX_USER_EMAIL}.`);
+    }
     return prismaClient.emails.create({
       data: {
         user_id,

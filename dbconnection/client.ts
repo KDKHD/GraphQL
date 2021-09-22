@@ -14,4 +14,5 @@ export const prismaClient = new PrismaClient({
  */
 prismaClient.$on("query", async (e) => {
   console.log(`${e.query} ${e.params}`);
+  console.log(`Query took: ${e.duration}ms`)
 });

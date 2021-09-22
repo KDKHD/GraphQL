@@ -11,12 +11,14 @@ import {
   whereGen,
 } from "@utils/queryHelpers";
 import { passwordValidator } from "@validators/user";
+import { UserInputError } from "apollo-server-errors";
 import { CountQuery, DataLoadersStore, ParentProvider } from "..";
 import { AuthProvider } from "../auth/provider";
 import { CountDataLoadersStore } from "../parent";
 
+const MAX_USER_PHONE_NUMBERS = 1
 /**
- * Emails Provider provides the data required by ParentProvider
+ * Phone Provider provides the data required by ParentProvider
  * to group results.
  */
 export class PhoneNumbersProvider extends ParentProvider {
@@ -75,13 +77,21 @@ export class PhoneNumbersProvider extends ParentProvider {
    * Other Functions
    */
 
-  static addPhoneNumber({
+  static async addPhoneNumber({
     user_id,
     phone,
   }: {
     user_id: string;
     phone: string;
   }) {
+    const phoneNumberCount = await prismaClient.phone_numbers.count({
+      where:{
+        user_id
+      }
+    })
+    if(phoneNumberCount>=MAX_USER_PHONE_NUMBERS){
+      throw new UserInputError(`Maximum amount of phone numbers is ${MAX_USER_PHONE_NUMBERS}.`);
+    }
     return prismaClient.phone_numbers.create({
       data: {
         user_id,
