@@ -99,6 +99,7 @@ export const resolvers = {
             after: args.AFTER,
             first: args.FIRST,
             order: args.ORDER,
+            partitionBy: ["user_id"],
             type: QueryArgsType.Query,
           })
           .load([["user_id", parent.user_id]])
@@ -129,6 +130,7 @@ export const resolvers = {
             after: args.AFTER,
             first: args.FIRST,
             order: args.ORDER,
+            partitionBy: ["user_id"],
             type: QueryArgsType.Query,
             many: true,
           })

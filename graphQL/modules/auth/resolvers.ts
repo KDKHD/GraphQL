@@ -207,7 +207,7 @@ export const resolvers = {
     user: async (parent: { user_id: string }, args: any, { res }: any) => {
       const userProvider = new UsersProvider();
       return userProvider
-        .dataLoaderManager({ type: QueryArgsType.Query })
+        .dataLoaderManager({ type: QueryArgsType.Query, partitionBy: ["user_id"]})
         .load([["user_id", parent.user_id]])
         .then(edgeItemToNode);
     },

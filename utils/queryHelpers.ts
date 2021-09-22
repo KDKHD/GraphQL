@@ -217,9 +217,10 @@ export const afterLimit = (sql: Prisma.Sql, args: QueryArgs) => {
       ? HARD_LIMIT
       : args.first;
 
-  const afterSQL = sqlWrap(format.withArray("%s > %s", [args.paginateFiled || "id", afterId]))
+  const afterSQL = sqlWrap(format.withArray("%s > %s", [args.paginateFiled || "partition_value", afterId]))
+  const limitSQL = sqlWrap(format.withArray("%s < %s", [args.paginateFiled || "partition_value", limit]))
 
-  return Prisma.sql`SELECT * FROM ${sql} WHERE ${afterSQL} LIMIT ${sqlWrap(format('%s', limit))}`;
+  return Prisma.sql`SELECT * FROM ${sql} WHERE ${afterSQL} AND ${limitSQL}`;
 };
 
 export const selectCount = (sql: Prisma.Sql, args: QueryArgs) => {
