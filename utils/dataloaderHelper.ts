@@ -2,18 +2,18 @@ import objectHash from "object-hash";
 
 export type DataLoaderKey = string[][];
 export type CountDataLoaderKey = string[][];
-export type BatchedKeys = { [field: string]: any[] };
+export type BatchedKeys = { [field: string]: Set<any> };
 export type SortDirection = "ASC" | "DESC";
 export type OrderBy = { [field: string]: SortDirection };
 
 export const batchKeys = (args: readonly DataLoaderKey[]) => {
-  const toReturn = {} as { [field: string]: string[] };
+  const toReturn = {} as { [field: string]: Set<string> };
   args.forEach((dataLoaderKey) => {
     dataLoaderKey.forEach((item) => {
       const field = item[0];
       const value = item[1];
-      if (!(item[0] in toReturn)) toReturn[field] = [];
-      toReturn[field].push(value);
+      if (!(item[0] in toReturn)) toReturn[field] = new Set();
+      toReturn[field].add(value);
     });
   });
   return toReturn;

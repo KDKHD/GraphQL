@@ -6,7 +6,7 @@ CREATE TABLE "users" (
     "f_name" VARCHAR,
     "l_name" VARCHAR,
     "password_hash" VARCHAR,
-    "created_at" TIMESTAMP(6),
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT NOW(),
 
     PRIMARY KEY ("id")
 );
@@ -17,7 +17,7 @@ CREATE TABLE "emails" (
     "user_id" UUID NOT NULL,
     "email" VARCHAR NOT NULL,
     "verified" BOOLEAN DEFAULT false,
-    "created_at" TIMESTAMP(6),
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT NOW(),
 
     PRIMARY KEY ("id")
 );
@@ -29,7 +29,7 @@ CREATE TABLE "phone_numbers" (
     "user_id" UUID NOT NULL,
     "phone" VARCHAR NOT NULL,
     "verified" BOOLEAN DEFAULT false,
-    "created_at" TIMESTAMP(6),
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT NOW(),
 
     PRIMARY KEY ("id")
 );
@@ -41,13 +41,7 @@ CREATE UNIQUE INDEX "users.user_id_unique" ON "users"("user_id");
 CREATE UNIQUE INDEX "users.username_unique" ON "users"("username");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "emails.email_unique" ON "emails"("email");
-
--- CreateIndex
 CREATE UNIQUE INDEX "phone_numbers.phone_number_id_unique" ON "phone_numbers"("phone_number_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "phone_numbers.phone_unique" ON "phone_numbers"("phone");
 
 -- AddForeignKey
 ALTER TABLE "emails" ADD FOREIGN KEY ("user_id") REFERENCES "users"("user_id") ON DELETE CASCADE ON UPDATE CASCADE;

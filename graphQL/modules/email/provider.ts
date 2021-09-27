@@ -91,7 +91,7 @@ export class EmailsProvider extends ParentProvider {
         user_id,
         email,
       },
-    }).then(()=>sendEmailVerification({email}))
+    })
   }
 
   static updateEmailVerified({

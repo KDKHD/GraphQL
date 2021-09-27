@@ -24,7 +24,8 @@ export type QueryArgs = {
   type?: QueryArgsType
 };
 
-const HARD_LIMIT = 15;
+const HARD_LIMIT = 20;
+
 export const prismaPartition = (args: QueryArgs) => {
   return Prisma.sql` 
             OVER( 
@@ -56,7 +57,7 @@ export const sqlWrap = (s:string) => {
 export const batchedKeysToSQL = (batchedKeys?: BatchedKeys) => {
   if (!batchedKeys || Object.keys(batchedKeys).length == 0) return Prisma.empty;
   return Prisma.join(
-    Object.keys(batchedKeys).map((field) => handleOperator("in", field, batchedKeys[field])
+    Object.keys(batchedKeys).map((field) => handleOperator("in", field, Array.from(batchedKeys[field]))
     ),
     " OR "
   );

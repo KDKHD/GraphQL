@@ -9,9 +9,8 @@ require('module-alias/register')
 
 dotenv.config();
 
-const PORT = process.env.PORT
 
-export default async function startApolloServer() {
+export default async function initApolloServer() {
   const app = express();
 
   app.use("/graphql", authMiddleware);
@@ -32,12 +31,6 @@ export default async function startApolloServer() {
   await server.start();
 
   server.applyMiddleware({ app });
-
-  await new Promise((resolve) =>
-    app.listen({ port: PORT }, resolve as () => void)
-  );
-
-  console.log(`🚀 Server ready at http://localhost:${PORT}${server.graphqlPath}`);
 
   return { server, app };
 }

@@ -115,11 +115,10 @@ export const resolvers = {
       },
       { logged_in_user }: { logged_in_user: users }
     ) => {
-      if (!logged_in_user) throw new AuthenticationError('You must be logged in.');
 
       const verification_check = await AuthProvider.verifyPhoneInit({
         phone: args.phone,
-        user_id: logged_in_user.user_id
+        user_id: logged_in_user?.user_id
       });
       return {
         to: verification_check.to,
@@ -137,7 +136,7 @@ export const resolvers = {
       const user = await AuthProvider.verifyPhone({
         to: args.to,
         code: args.code,
-        user_id: logged_in_user.user_id,
+        user_id: logged_in_user?.user_id,
       });
       if (user) {
         const token = await signJWT({ user_id: user.user_id });
@@ -172,11 +171,10 @@ export const resolvers = {
       },
       { logged_in_user }: { logged_in_user: users }
     ) => {
-      if (!logged_in_user) throw new AuthenticationError('You must be logged in.');
 
       const verification_check = await AuthProvider.verifyEmailInit({
         email: args.email,
-        user_id: logged_in_user.user_id
+        user_id: logged_in_user?.user_id
       });
       return {
         to: verification_check.to,
@@ -194,7 +192,7 @@ export const resolvers = {
       const user = await AuthProvider.verifyEmail({
         to: args.to,
         code: args.code,
-        user_id: logged_in_user.user_id,
+        user_id: logged_in_user?.user_id,
       });
 
       if (user) {

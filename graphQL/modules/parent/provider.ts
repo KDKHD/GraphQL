@@ -115,7 +115,8 @@ export class ParentProvider {
         // So we can do `WHERE user_id IN (1,2,3,...) OR name IN ('Bob','Jon')`
         const batchedKeys = batchKeys(keys);
         const batchedKeysKeys = Object.keys(batchedKeys);
-
+        console.log(batchedKeys)
+        console.log(batchedKeysKeys)
         // Data structure to help group data so we can return
         // rows in the correct order later. We will fill this
         // data structure later.
@@ -133,7 +134,7 @@ export class ParentProvider {
           const partitionsKey = Object.keys(kTemp)
             .sort()
             .map((item) => kTemp[item]);
-          grouped[objectHash(partitionsKey)] = [];
+          grouped[objectHash(partitionsKey)] = args.many ? [] : null;
           orderedPartitionKeys.push(objectHash(partitionsKey));
         });
 
