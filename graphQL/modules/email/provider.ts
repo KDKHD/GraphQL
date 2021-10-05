@@ -6,6 +6,7 @@ import {
   afterLimit,
   prismaPartition,
   QueryArgs,
+  QueryArgsType,
   selectCount,
   selectFields,
   whereGen,
@@ -77,24 +78,51 @@ export class EmailsProvider extends ParentProvider {
    * Other Functions
    */
 
-  static async addEmail({ user_id, email }: { user_id: string; email: string }) {
-    const emailCount = await prismaClient.emails.count({
-      where:{
-        user_id
-      }
-    })
-    if(emailCount>=MAX_USER_EMAIL){
-      throw new UserInputError(`Maximum amount of emails is ${MAX_USER_EMAIL}.`);
+   static async addEmail({
+    user_id,
+    email,
+  }: {
+    user_id: string;
+    email: string;
+  }) {
+    const emailsProvider = new EmailsProvider();
+    const emailRes = (await emailsProvider
+      .dataLoaderManager({
+        type: QueryArgsType.Query,
+        many: false,
+        where: {
+          verified: { is: "true" },
+        },
+      }).clear([["email", email]])
+      .load([["email", email]])) as emails;
+
+    if (emailRes) {
+      throw new UserInputError(`Email already exists.`);
     }
-    return prismaClient.emails.create({
-      data: {
+
+    // Make sure limit has not been reached (replace with countDataloader)
+    const emailCount = await prismaClient.emails.count({
+      where: {
         user_id,
-        email,
       },
-    })
+    });
+
+    if (emailCount >= MAX_USER_EMAIL) {
+      throw new UserInputError(
+        `Maximum amount ofemails is ${MAX_USER_EMAIL}.`
+      );
+    }
+
+    return prismaClient.emails
+      .create({
+        data: {
+          user_id,
+          email,
+        },
+      })
   }
 
-  static updateEmailVerified({
+  static async updateEmailVerified({
     email,
     verified = true,
     user_id
@@ -103,6 +131,22 @@ export class EmailsProvider extends ParentProvider {
     verified: boolean;
     user_id: string
   }) {
+    const emailsProvider = new EmailsProvider();
+
+    const emailRes = (await emailsProvider
+      .dataLoaderManager({
+        type: QueryArgsType.Query,
+        many: false,
+        where: {
+          verified: { is: "true" },
+        },
+      }).clear([["email", email]])
+      .load([["email", email]])) as emails;
+
+    if (emailRes) {
+      throw new UserInputError(`Email already exists.`);
+    }
+
     return prismaClient.emails.updateMany({
       where: {
         AND:[

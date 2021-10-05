@@ -93,7 +93,7 @@ export class PhoneNumbersProvider extends ParentProvider {
         where: {
           verified: { is: "true" },
         },
-      })
+      }).clear([["phone", phone]])
       .load([["phone", phone]])) as phone_numbers;
 
     if (phoneRes) {
@@ -122,7 +122,7 @@ export class PhoneNumbersProvider extends ParentProvider {
       })
   }
 
-  static updatePhoneVerified({
+  static async updatePhoneVerified({
     phone,
     verified = true,
     user_id,
@@ -131,6 +131,22 @@ export class PhoneNumbersProvider extends ParentProvider {
     verified: boolean;
     user_id: string;
   }) {
+    const phoneNumbersProvider = new PhoneNumbersProvider();
+    
+    const phoneRes = (await phoneNumbersProvider
+      .dataLoaderManager({
+        type: QueryArgsType.Query,
+        many: false,
+        where: {
+          verified: { is: "true" },
+        },
+      }).clear([["phone", phone]])
+      .load([["phone", phone]])) as phone_numbers;
+
+    if (phoneRes) {
+      throw new UserInputError(`Phone number already exists.`);
+    }
+
     return prismaClient.phone_numbers.updateMany({
       where: {
         AND: [{ phone }, { user_id }],

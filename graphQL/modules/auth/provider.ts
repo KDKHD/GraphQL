@@ -175,42 +175,43 @@ export class AuthProvider {
   }): Promise<VerificationInstance> {
     const phoneNumbersProvider = new PhoneNumbersProvider();
     if (args.phone == null) throw new UserInputError("Phone not provided.");
+    const phoneNumberForUserRes = (await phoneNumbersProvider
+      .dataLoaderManager({
+        id: "verifyPhoneInit-phoneNumberForUserRes",
+        type: QueryArgsType.Query,
+        where: {
+          phone: { is: args.phone },
+        },
+        many: false,
+      })
+      .load([["user_id", args.user_id]])) as phone_numbers;
+
+    const phoneNumberVerifiedRes = (await phoneNumbersProvider
+      .dataLoaderManager({
+        id: "verifyPhoneInit-phoneNumberVerifiedRes",
+        type: QueryArgsType.Query,
+        where: {
+          phone: { is: args.phone },
+        },
+        many: false,
+      })
+      .load([["verified", "true"]])) as phone_numbers;
+
     if (args.user_id) {
-      const phoneReMany = (await phoneNumbersProvider
-        .dataLoaderManager({
-          type: QueryArgsType.Query,
-          where: {
-            phone: { is: args.phone },
-          },
-          many: true,
-        })
-        .loadMany([[["user_id", args.user_id], ["verified", "true"]], [["user_id", args.user_id], ["verified", "false"]]])) as phone_numbers[];
-      console.log("HHHHH", JSON.stringify(phoneReMany))
-      const phoneRes = phoneReMany[0]
-      if (phoneRes == null) {
+      if (phoneNumberForUserRes == null && !phoneNumberVerifiedRes?.verified) {
         // User is logged in but does not have phone number (wants to add a new one)
         return PhoneNumbersProvider.addPhoneNumber({
           phone: args.phone,
           user_id: args.user_id,
-        }).then(() => sendPhoneVerification({ phone: args.phone}));;
-      }
-      else if (!phoneRes.verified) {
+        }).then(() => sendPhoneVerification({ phone: args.phone }));
+      } else if (!phoneNumberForUserRes.verified) {
         return sendPhoneVerification({ phone: args.phone });
-      }
-      else{
+      } else {
         throw new UserInputError("Phone already verified.");
       }
-
     } else {
       // User is not logged in and wants to sign in using phone
-      const phoneRes = (await phoneNumbersProvider
-        .dataLoaderManager({
-          type: QueryArgsType.Query,
-          many: true,
-        })
-        .load([["phone", args.phone]])) as phone_numbers;
-
-      if (!phoneRes.verified) {
+      if (!phoneNumberVerifiedRes?.verified) {
         throw new UserInputError("Phone number not found.");
       }
       return sendPhoneVerification({ phone: args.phone });
@@ -273,20 +274,26 @@ export class AuthProvider {
       })
       .catch(dbErrorHandler);
 
+    const setUpActions = [];
     if (user && args.email != null) {
-      EmailsProvider.addEmail({
-        user_id: user.user_id as string,
-        email: args.email,
-      }).then(() => sendEmailVerification({ email: args.email as string }));
+      setUpActions.push(
+        EmailsProvider.addEmail({
+          user_id: user.user_id as string,
+          email: args.email,
+        }).then(() => sendEmailVerification({ email: args.email as string }))
+      );
     }
 
     if (user && args.phone != null) {
-      PhoneNumbersProvider.addPhoneNumber({
-        user_id: user.user_id as string,
-        phone: args.phone,
-      }).then(() => sendPhoneVerification({ phone: args.phone as string }));
+      setUpActions.push(
+        PhoneNumbersProvider.addPhoneNumber({
+          user_id: user.user_id as string,
+          phone: args.phone,
+        }).then(() => sendPhoneVerification({ phone: args.phone as string }))
+      );
     }
 
+    await Promise.all(setUpActions);
     return user;
   }
 
@@ -297,35 +304,51 @@ export class AuthProvider {
     email: string;
     user_id: string;
   }): Promise<VerificationInstance> {
+    const emailsProvider = new EmailsProvider();
+
     if (args.email == null) throw new UserInputError("Email not provided.");
 
+    const emailForUserRes = (await emailsProvider
+      .dataLoaderManager({
+        id: "verifyEmailInit-emailForUserRes",
+        type: QueryArgsType.Query,
+        where: {
+          email: { is: args.email },
+        },
+        many: false,
+      })
+      .load([["user_id", args.user_id]])) as emails;
+
+    const emailVerifiedRes = (await emailsProvider
+      .dataLoaderManager({
+        id: "verifyEmailInit-emailVerifiedRes",
+        type: QueryArgsType.Query,
+        where: {
+          email: { is: args.email },
+        },
+        many: false,
+      })
+      .load([["verified", "true"]])) as emails;
+
     if (args.user_id) {
-      // User is logged in and wants to add a new email
-      return EmailsProvider.addEmail({
-        email: args.email,
-        user_id: args.user_id,
-      }).then(()=>sendEmailVerification({email:args.email}));
+      if (emailForUserRes == null && !emailVerifiedRes?.verified) {
+        // User is logged in but does not have email (wants to add a new one)
+        return EmailsProvider.addEmail({
+          email: args.email,
+          user_id: args.user_id,
+        }).then(() => sendEmailVerification({ email: args.email }));
+      } else if (!emailForUserRes.verified) {
+        return sendEmailVerification({ email: args.email });
+      } else {
+        throw new UserInputError("Email already verified.");
+      }
     } else {
       // User is not logged in and wants to sign in using email
-      const emailsProvider = new EmailsProvider();
-      const emailRes = (await emailsProvider
-        .dataLoaderManager({
-          type: QueryArgsType.Query,
-          many: false,
-        })
-        .load([["email", args.email]])) as emails;
-
-      if (!emailRes.verified) {
-        throw new UserInputError("Email number not found.");
+      if (!emailVerifiedRes?.verified) {
+        throw new UserInputError("Email not found.");
       }
-
       return sendEmailVerification({ email: args.email });
     }
-
-    return EmailsProvider.addEmail({
-      email: args.email,
-      user_id: args.user_id,
-    }).then(()=>sendEmailVerification({email:args.email}));;
   }
 
   static async verifyEmail(args: {

@@ -8,7 +8,7 @@ import { QueryArgs } from "@utils/queryHelpers";
 import DataLoader from "dataloader";
 import objectHash from "object-hash";
 
-const VALIDATE = process.env.ENVIRONMENT_NAME == "development"
+const VALIDATE = process.env.ENVIRONMENT_NAME == "development";
 
 export type CountQuery = {
   [fields: string]: any;
@@ -115,8 +115,7 @@ export class ParentProvider {
         // So we can do `WHERE user_id IN (1,2,3,...) OR name IN ('Bob','Jon')`
         const batchedKeys = batchKeys(keys);
         const batchedKeysKeys = Object.keys(batchedKeys);
-        console.log(batchedKeys)
-        console.log(batchedKeysKeys)
+
         // Data structure to help group data so we can return
         // rows in the correct order later. We will fill this
         // data structure later.
@@ -131,33 +130,35 @@ export class ParentProvider {
             total[next[0]] = next[1];
             return total;
           }, {} as { [field: string]: any });
-          const partitionsKey = Object.keys(kTemp)
-            .sort()
-            .map((item) => kTemp[item]);
+      
+          const partitionsKey = Object.keys(kTemp).sort().map((item) => kTemp[item]);
           grouped[objectHash(partitionsKey)] = args.many ? [] : null;
           orderedPartitionKeys.push(objectHash(partitionsKey));
         });
 
         // Make query, sort the data into the grouped object.
-        await this.batchFunctionHelper({ ...args, batchedKeys }).then((data) => {
-          data.forEach((item) => {
-            const partitionsKey = Object.keys(item)
-              .sort()
-              .filter((field) => batchedKeysKeys.includes(field))
-              .map((field) => item[field]);
-            if (partitionsKey.length !== batchedKeysKeys.length) {
-              throw new Error(
-                `Data dataloader result must contain: ${batchedKeysKeys.toString()}`
-              );
-            }
-            const tempPartitionsKeyHash = objectHash(partitionsKey);
-            if (tempPartitionsKeyHash in grouped) {
-              if (args.many) grouped[tempPartitionsKeyHash].push(item);
-              // if we are doing a one to many relationship
-              else grouped[tempPartitionsKeyHash] = item; // if we are doing a one to one relationship
-            }
-          });
-        });
+        await this.batchFunctionHelper({ ...args, batchedKeys }).then(
+          (data) => {
+            data.forEach((item) => {
+              const partitionsKey = Object.keys(item)
+                .sort()
+                .filter((field) => batchedKeysKeys.includes(field))
+                .map((field) => item[field].toString());
+              if (partitionsKey.length !== batchedKeysKeys.length) {
+                throw new Error(
+                  `Data dataloader result must contain: ${batchedKeysKeys.toString()}`
+                );
+              }
+
+              const tempPartitionsKeyHash = objectHash(partitionsKey);
+              if (tempPartitionsKeyHash in grouped) {
+                if (args.many) grouped[tempPartitionsKeyHash].push(item);
+                // if we are doing a one to many relationship
+                else grouped[tempPartitionsKeyHash] = item; // if we are doing a one to one relationship
+              }
+            });
+          }
+        );
 
         // Return data in the same order as the original keys
         return orderedPartitionKeys.map(
@@ -181,21 +182,23 @@ export class ParentProvider {
 
         // Same thing as dataLoader(). Populate grouped object with
         // key partitionsKey and value total count.
-        const grouped = await this.countBatchFunctionHelper(args).then((res) => {
-          return res.reduce((total, next) => {
-            const partitionsKey = Object.keys(next)
-              .filter((field) => batchedKeysKeys.includes(field))
-              .sort()
-              .map((field) => next[field]);
-            if (partitionsKey.length !== batchedKeysKeys.length) {
-              throw new Error(
-                `Count dataloader result must contain: ${batchedKeysKeys.toString()}`
-              );
-            }
-            total[objectHash(partitionsKey)] = next;
-            return total;
-          }, {} as { [partitionsKey: string]: CountQuery });
-        });
+        const grouped = await this.countBatchFunctionHelper(args).then(
+          (res) => {
+            return res.reduce((total, next) => {
+              const partitionsKey = Object.keys(next)
+                .filter((field) => batchedKeysKeys.includes(field))
+                .sort()
+                .map((field) => next[field]);
+              if (partitionsKey.length !== batchedKeysKeys.length) {
+                throw new Error(
+                  `Count dataloader result must contain: ${batchedKeysKeys.toString()}`
+                );
+              }
+              total[objectHash(partitionsKey)] = next;
+              return total;
+            }, {} as { [partitionsKey: string]: CountQuery });
+          }
+        );
 
         // Match CountDataLoaderKey with item in grouped. Same as dataLoader()
         return partitions.map((partition) => {
@@ -217,18 +220,17 @@ export class ParentProvider {
 
   /**
    * Batch function helper. Calls respective batch function internally
-   * but also can apply some validation checks to make sure queries return 
+   * but also can apply some validation checks to make sure queries return
    * the correct data.
    */
-  batchFunctionHelper(
-    args: QueryArgs): Promise<DataQuery[]> {
+  batchFunctionHelper(args: QueryArgs): Promise<DataQuery[]> {
     if (VALIDATE) {
       return this.batchFunction(args).then((res) => {
         res.forEach((item) => {
           const tempKeys = Object.keys(item);
           args.partitionBy?.forEach((field) => {
             if (!tempKeys.includes(field)) {
-              throw new Error(`Row must contain key ${field}. ${item}`)
+              throw new Error(`Row must contain key ${field}. ${item}`);
             }
           });
         });
@@ -239,20 +241,18 @@ export class ParentProvider {
     }
   }
 
-  countBatchFunctionHelper(
-    args: QueryArgs
-  ): Promise<CountQuery[]> {
+  countBatchFunctionHelper(args: QueryArgs): Promise<CountQuery[]> {
     if (VALIDATE) {
-      return this.countBatchFunction(args).then((res)=>{
-        res.forEach((item)=>{
+      return this.countBatchFunction(args).then((res) => {
+        res.forEach((item) => {
           const tempKeys = Object.keys(item);
           args.partitionBy?.forEach((field) => {
             if (!tempKeys.includes(field)) {
-              throw new Error(`Row must contain key ${field}. ${item}`)
+              throw new Error(`Row must contain key ${field}. ${item}`);
             }
           });
-        })
-        return res
+        });
+        return res;
       });
     } else {
       return this.countBatchFunction(args);

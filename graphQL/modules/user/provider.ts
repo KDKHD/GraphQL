@@ -135,9 +135,11 @@ export class UsersProvider extends ParentProvider {
     const usersProvider = new UsersProvider();
 
     const emailRes = (await emailsProvider
-      .dataLoaderManager({
-        many: false,
-      })
+      .dataLoaderManager({ many: false, where:{
+        "verified":{
+          is:"true"
+        }
+      } }).clear([["email", email]])
       .load([["email", email]])) as emails;
 
     return usersProvider
@@ -151,7 +153,11 @@ export class UsersProvider extends ParentProvider {
     const phoneNumbersProvider = new PhoneNumbersProvider();
     const usersProvider = new UsersProvider();
     const phoneRes = (await phoneNumbersProvider
-      .dataLoaderManager({ many: false })
+      .dataLoaderManager({ many: false, where:{
+        "verified":{
+          is:"true"
+        }
+      } }).clear([["phone", phone.replace(/\s/g, "")]])
       .load([["phone", phone.replace(/\s/g, "")]])) as phone_numbers;
 
     return usersProvider

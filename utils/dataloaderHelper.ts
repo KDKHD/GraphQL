@@ -8,7 +8,13 @@ export type OrderBy = { [field: string]: SortDirection };
 
 export const batchKeys = (args: readonly DataLoaderKey[]) => {
   const toReturn = {} as { [field: string]: Set<string> };
+  let keyHash = null as string | null
   args.forEach((dataLoaderKey) => {
+    const tempKeyHash = objectHash(Object.keys(dataLoaderKey))
+    
+    if( keyHash == null) keyHash = tempKeyHash
+    else if (keyHash != tempKeyHash) console.error("Each key must contain the same fields.")
+
     dataLoaderKey.forEach((item) => {
       const field = item[0];
       const value = item[1];

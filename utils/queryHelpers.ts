@@ -13,6 +13,7 @@ type ValueOf<T> = T[keyof T];
 export enum QueryArgsType {"Query" , "Mutation"}
 
 export type QueryArgs = {
+  id?: string
   where?: Where;
   batchedKeys?: BatchedKeys;
   first?: number;
@@ -59,7 +60,7 @@ export const batchedKeysToSQL = (batchedKeys?: BatchedKeys) => {
   return Prisma.join(
     Object.keys(batchedKeys).map((field) => handleOperator("in", field, Array.from(batchedKeys[field]))
     ),
-    " OR "
+    " AND "
   );
 };
 

@@ -139,8 +139,8 @@ export const resolvers = {
         user_id: logged_in_user?.user_id,
       });
       if (user) {
-        const token = await signJWT({ user_id: user.user_id });
-        return edgeItemToNode({ token: token, user_id: user.user_id });
+        const token = await signJWT({ user_id: user?.user_id });
+        return edgeItemToNode({ token: token, user_id: user?.user_id });
       }
     },
     /**
