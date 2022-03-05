@@ -1,3 +1,5 @@
+Still work in progress
+
 ## Update Prisma Schema
 ```
 npx prisma db pull
