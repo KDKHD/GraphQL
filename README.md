@@ -1,4 +1,6 @@
-Still work in progress
+Still work in progress.
+
+Most of the dataloader + pagination logic can be found here: https://github.com/KDKHD/GraphQL/blob/main/graphQL/modules/parent/provider.ts
 
 ## Update Prisma Schema
 ```
